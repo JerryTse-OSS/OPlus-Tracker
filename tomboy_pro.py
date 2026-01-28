@@ -71,18 +71,6 @@ MQIDAQAB
 -----END RSA PUBLIC KEY-----"""
 }
 
-OPEX_PUBLIC_KEYS = {
-    "cn": """-----BEGIN RSA PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr/B2JwdaZIQqVpx10R4R
-o/ZjCLzssu3vIZCKNwDh4LMBkeHRjcjtaVPoPvvTKY74XlMg7fmRv0iQELnlFNtH
-jgg8YnmhZObUmpVdpHLhthRSBqpRKl2LhMgYtE/SELUKvzelw2byNcRnU9/PvbsA
-Dcgz7IUFAzOvvtxnbaOd9CAthvO+0BTSk3dnBt6CT4nScgr13BAn6RTJI0wV5DZM
-pLNsTEXiTcQT3ZX2LcT6bRN8yUmGuARjLh2VG7H1gSxjUUDsKcFmcJY/8zyB64nq
-vX4Gya86c2bVaEd+CsMsOEYISWdVrG+Rf6y3BaG1DZRQDh0GD1cwtvA+JtvEmqGk
-qwIDAQAB
------END RSA PUBLIC KEY-----"""
-}
-
 REGION_CONFIG = {
     "cn": {"host": "component-ota-cn.allawntech.com", "language": "zh-CN", "carrier_id": "10010111", "public_key_version": "1615879139745"},
     "cn_gray": {"host": "component-ota-gray.coloros.com", "language": "zh-CN", "carrier_id": "10010111", "public_key_version": "1615879139745"},
@@ -98,16 +86,6 @@ REGION_CONFIG = {
     "tw": {"language": "zh-TW", "carrier_id": "00011010"},
     "my": {"language": "ms-MY", "carrier_id": "00111000"},
     "vn": {"language": "vi-VN", "carrier_id": "00111100"}
-}
-
-OPEX_REGION_CONFIG = {
-    "cn": {
-        "host": "opex-service-cn.allawntech.com",
-        "endpoint": "/queryUpdate",
-        "public_key_version": "1631001537253",
-        "language": "zh-CN",
-        "carrier_id": "10010111"
-    }
 }
 
 SUPPORTED_MODES = ["manual", "client_auto", "server_auto", "taste"]
@@ -149,7 +127,6 @@ class QueryResult:
     opex_list: List[OpexInfo] = None
     used_special_server: bool = False
     published_time: Optional[str] = None
-    raw_decrypted_body: Optional[Dict] = None
 
 @dataclass
 class QueryConfig:
@@ -169,9 +146,6 @@ class QueryConfig:
     fingerprint: Optional[str] = None
     serial: Optional[str] = None
     imei: Optional[str] = None
-    opex: int = 0
-    os_version: Optional[str] = None
-    brand: Optional[str] = None
 
 def generate_imei():
     return ''.join(map(str, [random.randint(0, 9) for _ in range(15)]))
@@ -280,14 +254,7 @@ def extract_expiration_date(url: str) -> Optional[datetime]:
                 continue
     return None
 
-def get_public_key_for_region(region: str, gray: int, opex_mode: bool = False) -> Tuple[str, Dict]:
-    if opex_mode:
-        if region == "cn":
-            return OPEX_PUBLIC_KEYS["cn"], OPEX_REGION_CONFIG["cn"]
-        else:
-            print("Warning: Opex mode currently only supports CN region, falling back to standard mode")
-            return get_public_key_for_region(region, gray, False)
-    
+def get_public_key_for_region(region: str, gray: int) -> Tuple[str, Dict]:
     key_region = "sg" if region not in ["cn", "eu", "in"] else region
     
     if gray == 1 and region == "cn":
@@ -322,44 +289,6 @@ def get_redirect_url(url: str, max_retries: int = 3) -> str:
                 return url
             time.sleep(2 * (attempt + 1))
     return url
-
-def parse_os_version(os_version_str: str) -> str:
-    if not os_version_str:
-        return "ColorOS7"
-    
-    match = re.search(r'^(\d+)(?:\.(\d+)(?:\.(\d+))?)?$', os_version_str.strip())
-    if match:
-        major = match.group(1)
-        minor = "0"
-        patch = "0"
-        return f"ColorOS{major}.{minor}.{patch}"
-    
-    match = re.search(r'V(\d+\.\d+\.\d+)', os_version_str)
-    if match:
-        version = match.group(1)
-        return f"ColorOS{version}"
-    
-    if os_version_str.startswith("ColorOS"):
-        return os_version_str
-
-def parse_brand(brand_str: str) -> str:
-    brand_lower = brand_str.strip().lower()
-    if brand_lower == "oppo":
-        return "OPPO"
-    elif brand_lower == "oneplus":
-        return "OnePlus"
-    elif brand_lower == "realme":
-        return "Realme"
-    else:
-        sys.exit(f"\nError: Invalid brand '{brand_str}'. Supported brands: OPPO, OnePlus, Realme")
-
-def extract_model_from_ota_version(ota_version: str) -> str:
-    if not ota_version:
-        return "unknown"
-    parts = ota_version.split('_')
-    if parts:
-        return parts[0]
-    return "unknown"
 
 class GoogleCheckinProber:
     def __init__(self):
@@ -608,60 +537,46 @@ def process_ota_version(ota_prefix: str, region: str, genshin: str, pre: str, cu
     ota_version = f"{ota_prefix}.01_0001_197001010000" if len(parts) < 3 else ota_prefix
     return ota_version, model
 
-def build_request_headers(config: QueryConfig, region_config: Dict, device_id: str, protected_key: str, opex_mode: bool = False) -> Dict:
+def build_request_headers(config: QueryConfig, region_config: Dict, device_id: str, protected_key: str) -> Dict:
     lang = config.custom_language or region_config["language"]
-    carrier_id = region_config["carrier_id"]
-    
-    headers = {
+    return {
         "language": lang,
         "newLanguage": lang,
         "androidVersion": "unknown",
+        "colorOSVersion": "unknown",
         "romVersion": "unknown",
         "infVersion": "1",
         "otaVersion": config.ota_version,
         "model": config.model,
         "mode": config.mode,
-        "nvCarrier": carrier_id,
+        "nvCarrier": region_config["carrier_id"],
         "pipelineKey": "ALLNET",
         "operator": "ALLNET",
         "companyId": "",
+        "version": "2",
         "deviceId": device_id,
         "Content-Type": "application/json; charset=utf-8",
-        "User-Agent": "okhttp/5.3.2" if opex_mode else "", 
+        "protectedKey": json.dumps({
+            "SCENE_1": {
+                "protectedKey": protected_key,
+                "version": str(time.time_ns() + 10**9 * 60 * 60 * 24),
+                "negotiationVersion": region_config["public_key_version"]
+            }
+        })
     }
 
-    if opex_mode:
-        scene_key = "opex"
-        extra_headers = {
-            "colorOSVersion": config.os_version,
-            "osVersion": config.os_version,
-            "productName": config.model,
-            "brand": config.brand,
-            "queryMode": "0",
-            "version": "1"
-        }
-    else:
-        scene_key = "SCENE_1"
-        extra_headers = {
-            "colorOSVersion": "unknown",
-            "version": "2"
-        }
-
-    headers.update(extra_headers)
-
-    expire_time = str(time.time_ns() + 10**9 * 60 * 60 * 24)
-    headers["protectedKey"] = json.dumps({
-        scene_key: {
-            "protectedKey": protected_key,
-            "version": expire_time,
-            "negotiationVersion": region_config["public_key_version"]
-        }
-    })
-
-    return headers
-
-def build_request_payload(config: QueryConfig, opex_mode: bool) -> Dict:
-    body = {
+def query_update(config: QueryConfig) -> QueryResult:
+    if config.special == 1 and config.region.lower() == "cn" and config.gray != 1:
+        result = query_update_special(config)
+        if result.success: return result
+    public_key, region_config = get_public_key_for_region(config.region, config.gray)
+    aes_key = generate_random_bytes(32)
+    iv = generate_random_bytes(16)
+    device_id = generate_random_string(64)
+    
+    headers = build_request_headers(config, region_config, device_id, generate_protected_key(aes_key, public_key))
+    
+    request_body = {
         "mode": "0",
         "time": int(time.time() * 1000),
         "isRooted": "0",
@@ -670,99 +585,39 @@ def build_request_payload(config: QueryConfig, opex_mode: bool) -> Dict:
         "deviceId": config.guid.lower(),
         "opex": {"check": True}
     }
-
-    if opex_mode:
-        body.update({
-            "businessList": [],
-            "otaVersion": config.ota_version
-        })
-    else:
-        if config.components_input:
-            body["components"] = parse_components(config.components_input)
-            
-    return body
-
-def encrypt_and_wrap_request(payload: Dict, aes_key: bytes, iv: bytes, opex_mode: bool) -> Dict:
-    payload_str = json.dumps(payload)
-    cipher_text = aes_ctr_encrypt(payload_str.encode(), aes_key, iv)
-    
-    cipher_b64 = base64.b64encode(cipher_text).decode()
-    iv_b64 = base64.b64encode(iv).decode()
-    
-    raw_data = {
-        "cipher": cipher_b64,
-        "iv": iv_b64
-    }
-    
-    if opex_mode:
-        return raw_data
-    else:
-        return {"params": json.dumps(raw_data)}
-
-def query_update(config: QueryConfig) -> QueryResult:
-    if config.special == 1 and config.region.lower() == "cn" and config.gray != 1 and config.opex == 0:
-        result = query_update_special(config)
-        if result.success: return result
-
-    opex_mode = (config.opex == 1)
-    public_key, region_config = get_public_key_for_region(config.region, config.gray, opex_mode)
-    
-    aes_key = generate_random_bytes(32)
-    iv = generate_random_bytes(16)
-    device_id = generate_random_string(64)
-    protected_key_str = generate_protected_key(aes_key, public_key)
-    
-    headers = build_request_headers(config, region_config, device_id, protected_key_str, opex_mode)
-    
-    raw_payload = build_request_payload(config, opex_mode)
-    request_data = encrypt_and_wrap_request(raw_payload, aes_key, iv, opex_mode)
-    
-    if opex_mode:
-        url = f"https://{region_config['host']}{region_config.get('endpoint', '/queryUpdate')}"
-        max_retries = 3
-    else:
-        endpoint_ver = "/update/v6" if (config.pre == "1" and config.special != 1) or (config.guid and config.guid != "0"*64) else "/update/v3"
-        url = f"https://{region_config['host']}{endpoint_ver}"
-        max_retries = 3
-    
-    for attempt in range(max_retries):
+    if config.components_input:
+        request_body["components"] = parse_components(config.components_input)
+    cipher_text = aes_ctr_encrypt(json.dumps(request_body).encode(), aes_key, iv)
+    endpoint_ver = "/update/v6" if (config.pre == "1" and config.special != 1) or (config.guid and config.guid != "0"*64) else "/update/v3"
+    url = f"https://{region_config['host']}{endpoint_ver}"
+    for attempt in range(3):
         try:
-            response = requests.post(url, headers=headers, json=request_data, timeout=30)
-            result = process_response(response, aes_key, opex_mode)
-            
-            if opex_mode and result.response_code == 500 and attempt < max_retries - 1:
-                time.sleep(2 * (attempt + 1))
-                continue
-                
-            return result
-            
+            response = requests.post(
+                url, headers=headers, timeout=30,
+                json={"params": json.dumps({
+                    "cipher": base64.b64encode(cipher_text).decode(),
+                    "iv": base64.b64encode(iv).decode()
+                })}
+            )
+            return process_response(response, aes_key)
         except Exception as e:
-            if attempt == max_retries - 1:
+            if attempt == 2:
                 return QueryResult(False, 0, error=f"Connection failed: {str(e)}")
             time.sleep(5 * (attempt + 1))
-            
+
     return QueryResult(False, 0, error="Max retries exceeded")
 
-def process_response(response: requests.Response, aes_key: bytes, opex_mode: bool = False) -> QueryResult:
+def process_response(response: requests.Response, aes_key: bytes) -> QueryResult:
     try:
         result = response.json()
     except json.JSONDecodeError:
         return QueryResult(False, 0, error="Invalid JSON response")
     
-    if opex_mode:
-        status = result.get("code", result.get("responseCode", 200))
-    else:
-        status = result.get("responseCode", 200)
-    
-    if status != 200:
-        error_msg = result.get("message") or result.get("error") or "Unknown error"
-        return QueryResult(False, status, error=error_msg)
-    
+    if (status := result.get("responseCode")) != 200:
+        return QueryResult(False, status, error=result.get("error", "Unknown error"))
+
     try:
-        if opex_mode:
-            encrypted_body = result 
-        else:
-            encrypted_body = json.loads(result["body"])
+        encrypted_body = json.loads(result["body"])
         
         decrypted = aes_ctr_decrypt(
             base64.b64decode(encrypted_body["cipher"]), 
@@ -770,8 +625,6 @@ def process_response(response: requests.Response, aes_key: bytes, opex_mode: boo
             base64.b64decode(encrypted_body["iv"])
         )
         body = json.loads(decrypted.decode())
-        
-        raw_decrypted_body = body
         
         published_time = None
         if ts := body.get("publishedTime"):
@@ -810,48 +663,23 @@ def process_response(response: requests.Response, aes_key: bytes, opex_mode: boo
             ))
             
         opex_list = []
-        if opex_mode:
-            raw_data = body.get("data")
-            opex_packages = []
-            
-            if isinstance(raw_data, list):
-                opex_packages = raw_data
-                ver_name = body.get("opexVersionName", "N/A") 
-            elif isinstance(raw_data, dict):
-                opex_packages = raw_data.get("opexPackage", [])
-                ver_name = raw_data.get("opexVersionName", "N/A")
-            else:
-                ver_name = "N/A"
-
-            for i, pkg in enumerate(opex_packages):
-                if not isinstance(pkg, dict): continue
-                
-                if pkg.get("code") == 200 and isinstance(pkg.get("info"), dict):
-                    info = pkg["info"]
-                    opex_list.append(OpexInfo(
-                        index=i + 1,
-                        version_name=ver_name,
-                        business_code=pkg.get("businessCode", "N/A"),
-                        zip_hash=info.get("zipHash", "N/A"),
-                        auto_url=replace_gauss_url(info.get("autoUrl", "N/A"))
-                    ))
-        else:
-            opex_info = body.get("opex")
-            if isinstance(opex_info, dict):
-                opex_packages = opex_info.get("opexPackage", [])
-                if isinstance(opex_packages, list):
-                    for i, pkg in enumerate(opex_packages):
-                        if not isinstance(pkg, dict): continue
-                        
-                        if pkg.get("code") == 200 and isinstance(pkg.get("info"), dict):
-                            info = pkg["info"]
-                            opex_list.append(OpexInfo(
-                                index=i + 1,
-                                version_name=opex_info.get("opexVersionName", "N/A"),
-                                business_code=pkg.get("businessCode", "N/A"),
-                                zip_hash=info.get("zipHash", "N/A"),
-                                auto_url=replace_gauss_url(info.get("autoUrl", "N/A"))
-                            ))
+        opex_info = body.get("opex")
+        
+        if isinstance(opex_info, dict):
+            opex_packages = opex_info.get("opexPackage", [])
+            if isinstance(opex_packages, list):
+                for i, pkg in enumerate(opex_packages):
+                    if not isinstance(pkg, dict): continue
+                    
+                    if pkg.get("code") == 200 and isinstance(pkg.get("info"), dict):
+                        info = pkg["info"]
+                        opex_list.append(OpexInfo(
+                            index=i + 1,
+                            version_name=opex_info.get("opexVersionName", "N/A"),
+                            business_code=pkg.get("businessCode", "N/A"),
+                            zip_hash=info.get("zipHash", "N/A"),
+                            auto_url=replace_gauss_url(info.get("autoUrl", "N/A"))
+                        ))
 
         desc_entry = body.get("description")
         if isinstance(desc_entry, dict):
@@ -859,43 +687,22 @@ def process_response(response: requests.Response, aes_key: bytes, opex_mode: boo
         else:
             changelog = "N/A"
 
-        result_data = {
-            "changelog": replace_gauss_url(changelog),
-            "security_patch": body.get("securityPatch", "N/A"),
-            "version": body.get("realVersionName", body.get("versionName", "N/A")),
-            "fake_ota_version": body.get("otaVersion", "N/A"),
-            "ota_version": body.get("realOtaVersion", body.get("otaVersion", "N/A"))
-        }
-
         return QueryResult(
-            True, 
-            status, 
-            data=result_data,
-            components=components,
-            opex_list=opex_list,
-            used_special_server=False,
-            published_time=published_time,
-            raw_decrypted_body=raw_decrypted_body
+            True, status, published_time=published_time, components=components, opex_list=opex_list,
+            data={
+                "changelog": replace_gauss_url(changelog),
+                "security_patch": body.get("securityPatch", "N/A"),
+                "version": body.get("realVersionName", body.get("versionName", "N/A")),
+                "fake_ota_version": body.get("otaVersion", "N/A"),
+                "ota_version": body.get("realOtaVersion", body.get("otaVersion", "N/A"))
+            }
         )
     except Exception as e:
         import traceback
         return QueryResult(False, status, error=f"Processing failed: {str(e)}")
 
-def display_result(result: QueryResult, config: Optional[QueryConfig] = None):
+def display_result(result: QueryResult):
     if result.success:
-        if config and config.opex == 1:
-            if result.opex_list:
-                print("\nOpex Info:")
-                for i, opex in enumerate(result.opex_list):
-                    print(f"• Link: {opex.auto_url}")
-                    print(f"• Zip Hash: {opex.zip_hash}")
-                    print(f"• Opex Codename: {opex.business_code}")
-                    if i < len(result.opex_list) - 1:
-                        print()
-            else:
-                print("\nNo Opex updates found.")
-            return
-
         print("\nFetch Info:")
         components = result.components
         if components:
@@ -909,13 +716,12 @@ def display_result(result: QueryResult, config: Optional[QueryConfig] = None):
                     print(f"MD5: {component.md5}")
         
         data = result.data
-        if data:
-            print(f"• Changelog: {data.get('changelog', 'N/A')}")
-            if result.published_time:
-                print(f"• Published Time: {result.published_time}")
-            print(f"• Security Patch: {data.get('security_patch', 'N/A')}")
-            print(f"• Version: {data.get('version', 'N/A')}")
-            print(f"• Ota Version: {data.get('ota_version', 'N/A')}")
+        print(f"• Changelog: {data['changelog']}")
+        if result.published_time:
+            print(f"• Published Time: {result.published_time}")
+        print(f"• Security Patch: {data['security_patch']}")
+        print(f"• Version: {data['version']}")
+        print(f"• Ota Version: {data['ota_version']}")
         
         if components and components[0].original_link != components[0].link:
             print(f"\n• Notice: Dynamic Link will expire at {components[0].expires_time}")
@@ -996,7 +802,7 @@ def auto_complete_query(base_ota_prefix: str, config: QueryConfig) -> None:
             fake = result.data.get('fake_ota_version')
             if fake != 'N/A': last_success_fake = fake
 
-        display_result(result, current_config)
+        display_result(result)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="OTA Query Tool", formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -1021,8 +827,6 @@ def parse_args():
     group_ota.add_argument("--components", help="Custom components (name:version)")
     group_ota.add_argument("--anti", type=int, choices=[0, 1], default=0, help="Anti mode")
     group_ota.add_argument("--special", type=int, choices=[0, 1], default=0, help="CN Special mode")
-    group_ota.add_argument("--opex", type=int, choices=[0, 1], default=0, help="Opex mode (only get opex updates)")
-    group_ota.add_argument("--info", help="Info for opex mode: osVersion,brand (comma separated). osVersion: 15/16/etc. brand: oppo/oneplus/realme")
     
     args = parser.parse_args()
     
@@ -1035,44 +839,18 @@ def parse_args():
     if args.pre == "1" and args.guid == "0"*64:
         parser.error("GUID required for pre mode")
         
-    if args.opex == 1 and args.region != "cn":
-        print("Warning: Opex mode currently only supports CN region. Switching to standard mode.")
-        args.opex = 0
-    
-    if args.opex == 1:
-        if not args.info:
-            parser.error("Opex Mode requires additional information")
-
-        parts = args.info.split(',')
-        if len(parts) != 2:
-            parser.error("Info parameter must have exactly 2 values separated by comma: osVersion,brand")
-        
-        os_version_input, brand_input = parts
-        
-        args.os_version = parse_os_version(os_version_input.strip())
-        
-        args.brand = parse_brand(brand_input.strip())
-    
     return args
 
 def main():
     try:
         args = parse_args()
         
-        if args.opex == 1:
-            final_model = extract_model_from_ota_version(args.ota_prefix)
-        else:
-            final_model = args.model
-
         config = QueryConfig(
-            ota_version=args.ota_prefix, model=final_model, region=args.region,
+            ota_version=args.ota_prefix, model=args.model or "unknown", region=args.region,
             gray=args.gray, mode=args.mode, guid=args.guid, components_input=args.components,
             anti=args.anti, has_custom_model=bool(args.model), genshin=args.genshin, pre=args.pre,
             special=args.special, custom_language=args.custom_language,
-            fingerprint=args.fingerprint, serial=args.serial, imei=args.imei,
-            opex=args.opex,
-            os_version=getattr(args, 'os_version', None),
-            brand=getattr(args, 'brand', None)
+            fingerprint=args.fingerprint, serial=args.serial, imei=args.imei
         )
 
         if args.fingerprint:
@@ -1085,14 +863,21 @@ def main():
                 title = title.replace(" is available", "")
 
             print("Fetch Info:")
-            print(f"• Link: {url if url else 'N/A'}")
-            print(f"• Version: {title if title else 'N/A'}")
+            if url:
+                print(f"• Link: {url}")
+            else:
+                print(f"• Link: N/A")
+            
+            if title:
+                print(f"• Version: {title}")
+            else:
+                print(f"• Version: N/A")
             print(f"• Size: {size}")
             return
 
         ota_upper = args.ota_prefix.upper().replace("OVT", "Ovt")
         processed_ota, processed_model = process_ota_version(
-            ota_upper, args.region, args.genshin, args.pre, final_model
+            ota_upper, args.region, args.genshin, args.pre, args.model
         )
         
         config.ota_version = processed_ota
@@ -1101,31 +886,26 @@ def main():
 
         is_simple_version = bool(re.search(r'_\d{2}\.[A-Z]', ota_upper) or ota_upper.count('_') >= 3)
         
-        if not is_simple_version and config.opex == 0:
+        if not is_simple_version:
             auto_complete_query(ota_upper, config)
-            return
-
-        if config.opex == 1 and ota_upper.count('_') < 3:
-            sys.exit(f"\nError: Opex query requires a complete OTA version string.\nExample: PJZ110_11.C.84_1840_202601060309\nYour input: {args.ota_prefix}")
-
-        if config.opex == 1:
-            print(f"Querying {config.region.upper()} opex")
         else:
             print(f"Querying {config.region.upper()} update")
             
-        print(f"Device Model: {config.model}")
-        print(f"Full OTA Version: {config.ota_version}")
-        
-        if config.guid != "0"*64:
-             print(f"Using GUID: {config.guid[:16]}")
+            print(f"Device Model: {config.model}")
+            print(f"Full OTA Version: {config.ota_version}")
+            
+            if config.guid == "0"*64:
+                print("Using GUID: Default device ID")
+            else:
+                print(f"Using GUID: {config.guid[:16]}")
 
-        result = query_update(config)
-        
-        if not result.success and result.response_code == 2004 and config.region == "in" and not config.has_custom_model and config.opex == 0:
-            config.model += "IN"
             result = query_update(config)
         
-        display_result(result, config)
+            if not result.success and result.response_code == 2004 and config.region == "in" and not config.has_custom_model:
+                config.model += "IN"
+                result = query_update(config)
+
+            display_result(result)
 
     except KeyboardInterrupt:
         sys.exit("\nInterrupted")
