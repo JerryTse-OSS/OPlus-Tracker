@@ -755,7 +755,7 @@ def display_result(result: QueryResult):
             print("\nUnknown Error")
 
 def auto_complete_query(base_ota_prefix: str, config: QueryConfig) -> None:
-    suffixes = ["_11.A", "_11.C", "_11.F", "_11.H"]
+    suffixes = ["_11.A", "_11.C", "_11.F", "_11.H", "_11.J"]
     last_success_fake = None
     
     if config.anti == 1: config.mode = "taste"
