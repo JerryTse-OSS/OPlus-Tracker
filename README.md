@@ -13,10 +13,10 @@ Collection of tools for querying and resolving OTA / SOTA / OPEX update links fo
 
 Current scripts:
 
-- `C16_transer.py` → resolves dynamic downloadCheck URLs (expiration handling)
+- `C16_transer.py` → resolves dynamic download link(After ColorOS 16)
 - `tomboy_pro.py`  → main OTA query tool (full / delta / gray / preview / anti-query bypass)
-- `opex_query.py`  → dedicated OPEX / carrier package query (ColorOS 15/16 business editions)
-- `sota_query.py`  → SOTA (Software OTA / modular APK) query & simulation (mainly CN)
+- `opex_query.py`  → dedicated OPEX query
+- `sota_query.py`  → SOTA (Software OTA) query(CN only)
 
 ## `C16_transer.py`
 
@@ -44,14 +44,12 @@ python C16_transer.py "https://gauss-componentotacostmanual-cn.allawnfs.com/.../
 Main advanced OTA query tool — supports full ROM, delta updates, gray channel, preview builds, Genshin editions, anti-query bypass (post-Oct 2025), etc.
 
 ### Main Features
-- Region-specific servers & RSA keys
-- RSA-OAEP + AES-CTR encryption
 - Auto suffix completion (`_11.A` / `_11.C` / `_11.F` / `_11.H` / `_11.J`)
 - Modes: `manual`, `client_auto`, `server_auto`, `taste`
 - `--anti 1` bypass for ColorOS 16 restricted models
 - Delta OTA via `--components`
 - Legacy special server fallback (`--special 1`)
-- Google check-in simulation (`--fingerprint`)
+- Google Server Firmware Query (`--fingerprint`)
 
 ### Dependencies
 ```text
@@ -78,14 +76,14 @@ python tomboy_pro.py <OTA_PREFIX> <REGION> [options]
 | Flag                  | Meaning                                          | Example / Note                       |
 |-----------------------|--------------------------------------------------|--------------------------------------|
 | `--model`             | Force model                                      | `--model PJX110`                     |
-| `--gray 1`            | Gray/test channel (CN only)                      |                                      |
+| `--gray 1`            | Test channel for Realme(Also few OPlus)          |                                      |
 | `--mode taste`        | Often used with `--anti 1`                       |                                      |
 | `--genshin 1` / `2`   | Genshin edition (YS / Ovt suffix)                |                                      |
 | `--pre 1`             | Preview build (needs `--guid`)                   |                                      |
 | `--guid 64hex`        | 64-char device GUID                              | Required for pre/taste               |
 | `--components`        | Delta query (name:fullversion,...)               | `--components System:PJX110_11...`   |
 | `--anti 1`            | Bypass ColorOS 16 query restriction (~Oct 2025)  | Usually + `--mode taste`             |
-| `--fingerprint`       | Use Google check-in instead                      | OxygenOS / US variant useful         |
+| `--fingerprint`       | Use Google OTA Server instead                    | OxygenOS / US variant useful         |
 
 **Examples**
 ```bash
