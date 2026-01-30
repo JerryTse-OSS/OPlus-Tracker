@@ -16,7 +16,7 @@
 - `C16_transer.py` → 解决动态下载链接问题（ColorOS 16）
 - `tomboy_pro.py`  → OTA 查询工具（支持完整全量包/增量包/灰度包/预览包，可绕过反查询限制）
 - `opex_query.py`  → OPEX补丁包查询
-- `sota_query.py`  → SOTA（软件级OTA）主要适用于（国内版）
+- `sota_query.py`  → SOTA（软件级OTA）主要适用于国内版
 ## `C16_transer.py`
 
 ### 功能
