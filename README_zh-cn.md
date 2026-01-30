@@ -13,10 +13,10 @@
 
 当前包含脚本:
 
-- `C16_transer.py` → 解析动态链接（处理链接过期问题）
+- `C16_transer.py` → 解决动态下载链接问题（ColorOS 16）
 - `tomboy_pro.py`  → OTA 查询工具（支持完整全量包/增量包/灰度包/预览包，可绕过反查询限制）
-- `opex_query.py`  → OPEX补丁包 / 运营商定制包查询（适配ColorOS 15/16 商务版）
-- `sota_query.py`  → SOTA（软件级OTA/APK）查询与模拟（主要适用于国内版）
+- `opex_query.py`  → OPEX补丁包查询
+- `sota_query.py`  → SOTA（软件级OTA）主要适用于（国内版）
 ## `C16_transer.py`
 
 ### 功能
@@ -43,14 +43,12 @@ python C16_transer.py "https://gauss-componentotacostmanual-cn.allawnfs.com/.../
 这款是高阶OTA 查询工具，支持完整全量包、增量升级、灰度通道、预览版、原神定制版，还能绕过2025年10月后上线的反查询限制。
 
 ### 主要功能
-- 适配各地区专属服务器及对应的 RSA 加密密钥
-- 支持 RSA-OAEP + AES-CTR 双重加密方式
 - 自动补全版本号后缀 (`_11.A` / `_11.C` / `_11.F` / `_11.H` / `_11.J`)
 - 提供四种查询模式: `manual`, `client_auto`, `server_auto`, `taste`
 - 支持`--anti 1` 参数，绕过 ColorOS 16 机型的查询限制
 - 可通过 `--components` 参数查询增量 OTA 包 
 - 旧版特殊服务器回退 (`--special 1`)
-- 模拟 Google 设备校验 (`--fingerprint`)
+- Google 服务器固件查询 (`--fingerprint`)
 
 ### 依赖
 ```text
@@ -77,14 +75,14 @@ python tomboy_pro.py <OTA版本前缀> <地区> [参数]
 | 参数                  | 说明                                          | 示例 / 备注                       |
 |-----------------------|--------------------------------------------------|--------------------------------------|
 | `--model`             | 强制指定设备型号                                    | `--model PJX110`                     |
-| `--gray 1`            | 开启灰度 / 测试通道（仅国内）                      |                                      |
+| `--gray 1`            | Realme（以及部分 OPlus）的测试频道                      |                                      |
 | `--mode taste`        | 尝鲜模式 `--anti 1`                       |                                      |
 | `--genshin 1` / `2`   | 原神定制版 (YS / Ovt suffix)                |                                      |
 | `--pre 1`             | 预览版 (needs `--guid`)                   |                                      |
 | `--guid 64hex`        | 设备 64 位 GUID                              | 预览版 / 尝鲜模式必填               |
 | `--components`        | 增量包查询（组件名：完整版本号...）               | `--components System:PJX110_11...`   |
 | `--anti 1`            | 绕过 ColorOS 16 反查询限制（2025.10上线）  | 通常搭配 + `--mode taste` 使用             |
-| `--fingerprint`       | 改用 Google 设备校验                    | 对氧 OS / 美版机型适用         |
+| `--fingerprint`       | 请改用 Google OTA 服务器                    | 对氧 OS / 美版机型适用         |
 
 **使用示例**
 ```bash
