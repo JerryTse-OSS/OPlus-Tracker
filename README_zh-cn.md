@@ -58,7 +58,7 @@ protobuf   (可选，仅--fingerprint模式需要)
 ```
 
 ```bash
-pip install -r requirement.txt
+pip install -r requirements.txt
 ```
 
 ### 用法
