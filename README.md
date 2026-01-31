@@ -1,3 +1,12 @@
+<div align="center"> 
+ <table> 
+   <tr> 
+     <td valign="center"><img src="https://github.com/twitter/twemoji/blob/master/assets/svg/1f1fa-1f1f8.svg" width="16"/> English</td> 
+     <td valign="center"><a href="README_zh-cn.md"><img src="https://em-content.zobj.net/thumbs/120/twitter/351/flag-china_1f1e8-1f1f3.png" width="16"/> 简体中文</a></td>  
+   </tr> 
+ </table> 
+ </div> 
+
 # OPlus Tracker
 
 Collection of tools for querying and resolving OTA / SOTA / OPEX update links for OPPO, OnePlus, Realme devices (ColorOS / OxygenOS).
@@ -102,6 +111,7 @@ python opex_query.py <FULL_OTA_VERSION> --info <OS_VERSION>,<BRAND>
 # Examples
 python opex_query.py PJZ110_11.C.84_1840_202601060309 --info 16,oneplus
 python opex_query.py PJZ110_11.C.85_...               --info 16,oppo
+python opex_query.py RMX5200_11.A.63_...               --info 16,realme
 ```
 
 **Note**: Requires **complete** OTA version string (at least 3 `_` segments).
