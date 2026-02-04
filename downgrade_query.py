@@ -160,6 +160,11 @@ def main():
         if resp.status_code == 200:
             resp_json = resp.json()
             
+            # Handle special error code 1004
+            if isinstance(resp_json, dict) and resp_json.get('code') == 1004:
+                print("DUID query GUID is empty")
+                return
+            
             # Handle Decryption
             final_data = None
             if "cipher" in resp_json:
