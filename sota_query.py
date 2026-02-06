@@ -175,13 +175,13 @@ def execute_query_request(config: Dict[str, str]) -> Tuple[Optional[Dict[str, An
         
         if response.status_code != 200:
             print(f"[!] Query failed with HTTP {response.status_code}")
-            return None, None, None
+            sys.exit(1)
         
         resp_json = response.json()
         
         if "body" not in resp_json:
-            print("[!] No 'body' field in query response")
-            return None, None, None
+            print("[!] Nothing in query response")
+            sys.exit(1)
         
         # Decrypt the response
         encrypted_body = json.loads(resp_json["body"])
@@ -195,16 +195,14 @@ def execute_query_request(config: Dict[str, str]) -> Tuple[Optional[Dict[str, An
         return decrypted_json, aes_key, iv
         
     except Exception as e:
-        print(f"[!] Query error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return None, None, None
+        print(f"[!] Query error, something was wrong in arguments")
+        sys.exit(1)
 
 def execute_update_request(query_result: Dict[str, Any], config: Dict[str, str]) -> Optional[Dict[str, Any]]:
     """Execute the update using data from query result"""
     if "sota" not in query_result:
         print("[!] No SOTA data found in query results")
-        return None
+        sys.exit(1)
     
     sota_data = query_result["sota"]
     new_sota_version = sota_data.get("sotaVersion", "")
@@ -212,13 +210,13 @@ def execute_update_request(query_result: Dict[str, Any], config: Dict[str, str])
     
     if not new_sota_version:
         print("[!] No SOTA version found in query results")
-        return None
+        sys.exit(1)
     
     # Get APK modules from query result
     apk_modules = sota_data.get("moduleMap", {}).get("apk", [])
     if not apk_modules:
         print("[!] No APK modules found in query results")
-        return None
+        sys.exit(1)
     
     # Generate lower version numbers for update request
     # In real usage, you would get current versions from device
@@ -278,13 +276,13 @@ def execute_update_request(query_result: Dict[str, Any], config: Dict[str, str])
         
         if response.status_code != 200:
             print(f"[!] Update request failed with HTTP {response.status_code}")
-            return None
+            sys.exit(1)
         
         resp_json = response.json()
         
         if "body" not in resp_json:
-            print("[!] No 'body' field in update response")
-            return None
+            print("[!] Nothing in update response")
+            sys.exit(1)
         
         # Decrypt the response
         encrypted_body = json.loads(resp_json["body"])
