@@ -40,53 +40,6 @@ CwIDAQAB
 
 DEFAULT_NEGOTIATION_VERSION = "1615879139745"
 
-# --- Validation Functions ---
-
-def validate_security_patch_format(date_str: str) -> bool:
-    """Validate security patch format: xxxx-xx-xx"""
-    pattern = r'^\d{4}-\d{2}-\d{2}$'
-    if not re.match(pattern, date_str):
-        return False
-    
-    try:
-        # Try to parse the date to ensure it's a valid date
-        datetime.strptime(date_str, '%Y-%m-%d')
-        return True
-    except ValueError:
-        return False
-
-def validate_all_params(args):
-    """Validate that all required parameters are provided and valid"""
-    missing_params = []
-    
-    # Check each required parameter
-    required_params = [
-        ('model', args.model),
-        ('brand', args.brand),
-        ('ota_version', args.ota_version),
-        ('current_sota', args.current_sota),
-        ('coloros', args.coloros),
-        ('security_patch', args.security_patch),
-        ('rom_version', args.rom_version)
-    ]
-    
-    for param_name, param_value in required_params:
-        if not param_value or param_value.strip() == "":
-            missing_params.append(param_name)
-    
-    if missing_params:
-        print(f"❌ Error: The following required parameters are missing or empty:")
-        for param in missing_params:
-            print(f"   --{param.replace('_', '-')}")
-        return False
-    
-    # Validate security patch format
-    if not validate_security_patch_format(args.security_patch):
-        print(f"❌ Error: Security patch format must be xxxx-xx-xx (e.g., 2025-12-01)")
-        return False
-    
-    return True
-
 # --- Crypto Helpers ---
 
 def generate_random_bytes(length: int) -> bytes:
@@ -183,8 +136,8 @@ def execute_query_request(config: Dict[str, str]) -> Tuple[Optional[Dict[str, An
         "isRooted": "0",
         "isLocked": True,
         "type": "1",
-        "securityPatch": config["security_patch"],
-        "securityPatchVendor": config["security_patch"],
+        "securityPatch": "1970-01-01",
+        "securityPatchVendor": "1970-01-01",
         "cota": {
             "cotaVersion": "",
             "cotaVersionName": "",
@@ -352,21 +305,38 @@ def execute_update_request(query_result: Dict[str, Any], config: Dict[str, str])
 
 # --- Output Formatting ---
 
-def extract_and_format_apk_info(update_result: Dict[str, Any]) -> List[str]:
-    """Extract APK information from update result and format as requested"""
+def extract_and_format_apk_info(update_result: Dict[str, Any]) -> Tuple[str, List[str]]:
+    """Extract APK information from update result and format as requested
+    Returns: (sota_version, formatted_lines)
+    """
     formatted_lines = []
+    sota_version = "Unknown"
     
     # Check if moduleMap exists in the result
     if "moduleMap" not in update_result:
         print("[!] No moduleMap found in update result")
-        return formatted_lines
+        return sota_version, formatted_lines
+    
+    # Check for sota version
+    if "sota" in update_result and "sotaVersion" in update_result["sota"]:
+        sota_version = update_result["sota"]["sotaVersion"]
+    elif "components" in update_result and len(update_result["components"]) > 0:
+        for component in update_result["components"]:
+            if "sotaVersion" in component:
+                sota_version = component["sotaVersion"]
+                break
     
     # Check for apk modules
     apk_modules = update_result["moduleMap"].get("apk", [])
     
     if not apk_modules:
         print("[!] No APK modules found in update result")
-        return formatted_lines
+        return sota_version, formatted_lines
+    
+    for apk in apk_modules:
+        if "sotaVersion" in apk and sota_version == "Unknown":
+            sota_version = apk["sotaVersion"]
+            break
     
     # Format each APK module
     for i, apk in enumerate(apk_modules):
@@ -385,39 +355,35 @@ def extract_and_format_apk_info(update_result: Dict[str, Any]) -> List[str]:
         
         formatted_lines.append(formatted_line)
     
-    return formatted_lines
+    return sota_version, formatted_lines
 
-def print_formatted_output(formatted_lines: List[str]):
+def print_formatted_output(sota_version: str, formatted_lines: List[str]):
     """Print the formatted output as requested"""
     if not formatted_lines:
         print("\nNo APK information to display")
         return
     
     print("SOTA Apk Info:")
+    print(f"\n· SOTA Version: {sota_version}\n")
     
     for line in formatted_lines:
         print(line)
 
 # --- Main Execution ---
+
 def main(args):
     """Main execution: run query, then update, then format output"""
-    
+
     if not all([args.model, args.brand, args.ota_version, args.current_sota, 
-                args.coloros, args.security_patch, args.rom_version]):
+                args.coloros]):
         print("❌ Error: All parameters are required")
         print("\nUsage Example:")
         print("  python3 sota_query.py --model PJX110 --brand OnePlus \\")
         print("                       --ota-version PJX110_11.F.13_2130_202512181912 \\")
         print("                       --current-sota \"V80P02(BRB1CN01)\" \\")
         print("                       --coloros ColorOS16.0.0 \\")
-        print("                       --security-patch 2025-12-01 \\")
-        print("                       --rom-version \"PJX110_16.0.2.400(CN01)\"")
         return
-    
-    if not validate_security_patch_format(args.security_patch):
-        print(f"❌ Error: Security patch format must be xxxx-xx-xx (e.g., 2025-12-01)")
-        return
-    
+
     # Create config dictionary from args
     config = {
         "model": args.model,
@@ -425,16 +391,14 @@ def main(args):
         "ota_version": args.ota_version,
         "current_sota": args.current_sota,
         "coloros": args.coloros,
-        "security_patch": args.security_patch,
-        "rom_version": args.rom_version
+        "rom_version": "unknown"
     }
     
     print(f"Device: {config['model']}")
     print(f"Current SOTA: {config['current_sota']}")
     print(f"OS: {config['coloros'].replace('ColorOS', 'ColorOS ')}")
-    print(f"Security Patch: {config['security_patch']}")
     print()
-    
+
     query_result, aes_key, iv = execute_query_request(config)
     
     if query_result is None:
@@ -447,9 +411,9 @@ def main(args):
         print("[!] Update failed. Cannot extract APK information.")
         return
     
-    formatted_lines = extract_and_format_apk_info(update_result)
+    sota_version, formatted_lines = extract_and_format_apk_info(update_result)
     
-    print_formatted_output(formatted_lines)
+    print_formatted_output(sota_version, formatted_lines)
 
 def parse_args():
     """Parse command line arguments with validation and custom error handling"""
@@ -461,9 +425,7 @@ Usage Example:
   python3 %(prog)s --model PJX110 --brand OnePlus \\
                    --ota-version PJX110_11.F.13_2130_202512181912 \\
                    --current-sota "V80P02(BRB1CN01)" \\
-                   --coloros ColorOS16.0.0 \\
-                   --security-patch 2025-12-01 \\
-                   --rom-version "PJX110_16.0.2.400(CN01)"
+                   --coloros ColorOS16.0.0 \\"
         """
     )
     
@@ -473,8 +435,6 @@ Usage Example:
     parser.add_argument('--ota-version', required=True, help='OTA version (e.g., PJX110_11.F.13_2130_202512181912)')
     parser.add_argument('--current-sota', required=True, help='Current SOTA version on device (e.g., V80P02(BRB1CN01))')
     parser.add_argument('--coloros', required=True, help='ColorOS version (e.g., ColorOS16.0.0)')
-    parser.add_argument('--security-patch', required=True, help='Security patch date in format xxxx-xx-xx (e.g., 2025-12-01)')
-    parser.add_argument('--rom-version', required=True, help='ROM version (e.g., PJX110_16.0.2.400(CN01))')
     
     # Custom error handling to show usage example
     try:
@@ -486,19 +446,11 @@ Usage Example:
         print("                       --ota-version PJX110_11.F.13_2130_202512181912 \\")
         print("                       --current-sota \"V80P02(BRB1CN01)\" \\")
         print("                       --coloros ColorOS16.0.0 \\")
-        print("                       --security-patch 2025-12-01 \\")
-        print("                       --rom-version \"PJX110_16.0.2.400(CN01)\"")
         sys.exit(1)
 
 if __name__ == "__main__":
     # Parse command line arguments
     args = parse_args()
-    
-    # Validate all parameters
-    if not validate_all_params(args):
-        print("\nUsage example:")
-        print("  python3 sota_query.py --model PJX110 --brand OnePlus --ota-version PJX110_11.F.13_2130_202512181912 --current-sota \"V80P02(BRB1CN01)\" --coloros ColorOS16.0.0 --security-patch 2025-12-01 --rom-version \"PJX110_16.0.2.400(CN01)\"")
-        sys.exit(1)
     
     # Run main automation
     try:
