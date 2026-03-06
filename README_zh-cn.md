@@ -17,6 +17,8 @@
  - `tomboy_pro.py`  → OTA 查询工具（支持完整全量包/增量包/灰度包/预览包，可绕过反查询限制） 
  - `opex_query.py`  → OPEX补丁包查询 
  - `sota_query.py`  → SOTA（软件级OTA）主要适用于国内版 
+ - `iot_query.py` → 查询旧版及服务器（仅限中国）
+ - `downgrade_query.py` → 查询官方降级包（仅限中国）
  ## `C16_transer.py` 
   
  ### 功能 
@@ -199,6 +201,30 @@ Fetch Info:
 ```
 
 **注意**：仅适用于支持官方降级的型号/地区。服务器可能会拒绝无效的DUID或项目编号。
+
+## `realme_edl_query.py`
+
+使用realme服务器查询EDL(9008)rom的工具。
+
+ ### 用法
+
+```bash
+python realme_edl_query.py <版本号> <区域> <日期>
+
+# 示例
+python3 realme_edl_query.py "RMX3888_16.0.3.500(CN01)" CN 202601241320
+```
+
+**输出示例**
+```
+查询 RMX8899_16.0.3.532(CN01)
+
+获取信息：
+
+• 链接：https://rms11.realme.net/sw/RMX8899domestic_11_16.0.3.532CN01_2026013016580190.zip
+```
+
+**注意**：您可以从完整的 OTA 版本号中获取日期，即下划线中的第三部分。
 
  ### 重要说明（2025-2026） 
  - ColorOS16 系统新增严格的反查询限制（2025年10月左右上线），多数机型可通过 `--anti `1 + `taste` 模式 + 基础版本号（如 `11.A`）绕过该限制。 
