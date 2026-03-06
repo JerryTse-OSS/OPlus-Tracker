@@ -115,7 +115,7 @@ python iot_query.py OWW221_11.A cn --model OWW221
 
 **Note**: Only supports region `cn`. Results may be outdated.
 
-## `downgrade_query.py`
+## `downgrade_query.py` & `downgrade_query_old.py`
 
 Query official **downgrade packages** from `downgrade.coloros.com` (CN only).  
 Useful when you need older official firmware versions that are still signed and allowed for downgrade.
@@ -135,18 +135,43 @@ Install:
 pip install requests cryptography
 ```
 
-### Usage
+### Usage of `downgrade_query.py`
 ```bash
-python downgrade_query.py <OTA_PREFIX> <PrjNum> <DUID>
+python downgrade_query.py <OTA_PREFIX> <PrjNum> <snNum> <DUID> [--debug 0/1]
 
 # Example
-python downgrade_query.py PKX110_11.C 24821 498A44DF1BEC4EB19FBCB3A870FCACB4EC7D424979CC9C517FE7B805A1937746
+python downgrade_query.py PKX110_11.C 24821 a1b2c3e4 498A44DF1BEC4EB19FBCB3A870FCACB4EC7D424979CC9C517FE7B805A1937746
 ```
 
 **Constraints**
 - `<OTA_PREFIX>` : Must contain at least one `_` (e.g. `PKX110_11.C`)
 - `<PrjNum>`     : Exactly 5 digits (e.g. `24821`)
+- `<snNum>`     : SN Number from phone
 - `<DUID>`       : 64-character SHA256 string (get from dialer code *#6776#)
+- `[--debug 0/1]` : Get metadata for official downgrade process
+
+**Output example**
+```
+Fetch Info:
+• Link: https://...
+• Changelog: ...
+• Published Time: 2025-08-12 14:30:00
+• Version: ColorOS 15.0 (Android 15)
+• Ota Version: PKX110_11.C.12_...
+• MD5: abcdef123456...
+```
+
+### Usage of `downgrade_query_old.py` 
+```bash
+python downgrade_query.py <OTA_PREFIX> <PrjNum>
+
+# Example
+python downgrade_query.py PKX110_11.C 24821
+```
+
+**Constraints**
+- `<OTA_PREFIX>` : Must contain at least one `_` (e.g. `PKX110_11.C`)
+- `<PrjNum>`     : Exactly 5 digits (e.g. `24821`)
 
 **Output example**
 ```
@@ -160,6 +185,28 @@ Fetch Info:
 ```
 
 **Note**: Only works for models/regions that support official downgrade. Server may reject invalid DUID or project number.
+
+## `realme_edl_query.py`
+
+Query tool using REALME Server to query for EDL ROM.
+
+### Usage
+```bash
+python realme_edl_query.py <VERSION_NAME> <REGION> <DATE>
+
+# Examples
+python3 realme_edl_query.py "RMX3888_16.0.3.500(CN01)" CN 202601241320
+```
+
+**Output example**
+```
+Querying for RMX8899_16.0.3.532(CN01)
+
+Fetch Info:
+• Link: https://rms11.realme.net/sw/RMX8899domestic_11_16.0.3.532CN01_2026013016580190.zip
+```
+
+**Note**: You may get the date from full OTA Version, the third part in `_`
 
 ### Important Notes (2025–2026)
 - ColorOS 16 introduced strong anti-query restrictions (~Oct 2025). Use `--anti 1` + `taste` mode + base version (e.g. `11.A`) in `tomboy_pro.py` to bypass on many models.
