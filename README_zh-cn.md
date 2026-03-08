@@ -9,7 +9,7 @@
   
  # OPlus 固件查询工具 
   
- 可查询并解析OPPO、一加（OnePlus）、真我（Realme）设备的 OTA/SOTA/OPEX 升级包下载链接，适配 ColorOS、OxygenOS系统 
+ 可查询并解析OPPO、一加（OnePlus）、真我（Realme）设备的 OTA/SOTA/OPEX/IOT/ 降级，升级包下载链接，适用于ColorOS、OxygenOS系统 
   
  当前包含脚本: 
   
@@ -17,6 +17,8 @@
  - `tomboy_pro.py`  → OTA 查询工具（支持完整全量包/增量包/灰度包/预览包，可绕过反查询限制） 
  - `opex_query.py`  → OPEX补丁包查询 
  - `sota_query.py`  → SOTA（软件级OTA）主要适用于国内版 
+ - `iot_query.py` → 查询旧版及服务器（仅限中国）
+ - `downgrade_query.py` → 查询官方降级包（仅限中国）
  ## `C16_transer.py` 
   
  ### 功能 
@@ -33,7 +35,7 @@
  pip install requests 
  ``` 
   
- ### 用法 
+ ### 使用方法 
  ```bash 
  python C16_transer.py "https://gauss-componentotacostmanual-cn.allawnfs.com/.../downloadCheck?Expires=1767225599&..." 
  ``` 
@@ -61,7 +63,7 @@
  pip install -r requirements.txt 
  ``` 
   
- ### 用法 
+ ### 使用方法 
  ```bash 
  python tomboy_pro.py <OTA版本前缀> <地区> [参数] 
  ``` 
@@ -103,7 +105,7 @@
   
  专属 OPEX包查询工具（主要适配 ColorOS 15/16 国内版设备）。 
   
- ### 用法 
+ ### 使用方法 
  ```bash 
  python opex_query.py <完整OTA版本号> --info <系统版本>,<品牌> 
   
@@ -124,7 +126,7 @@
  - 模拟升级请求，提取各APK的直接下载链接 
  - 具备严格的入参校验，确保符合官方接口要求 
   
- ### 用法 
+ ### 使用方法 
  7个**参数**均为必填： 
   
  ```bash 
@@ -137,9 +139,120 @@
    --security-patch 2025-12-01 \ 
    --rom-version "PJX110_16.0.2.400(CN01)" 
  ``` 
-  
- 重要说明（2025-2026） 
- - ColorOS 16 系统新增严格的反查询限制（2025 年 10 月左右上线），多数机型可通过 `--anti `1 + `taste` 模式 + 基础版本号（如 `11.A`）绕过该限制。 
+ ## `iot_query.py`
+
+使用旧版 **iota.coloros.com** 特殊服务器（仅限中国大陆）的查询工具。
+通常会返回一些已不再通过常规渠道提供的旧版本或特殊版本。
+
+### 使用方法
+```bash
+python iot_query.py <OTA_PREFIX> cn [options]
+
+# 示例
+python iot_query.py OWW221 cn
+python iot_query.py OWW221_11.A cn --model OWW221
+```
+
+**注意**: 仅支持`中国`地区。结果可能存在时效性问题。
+
+## `downgrade_query.py` & `downgrade_query_old.py`
+
+从 `downgrade.coloros.com`（仅限中国大陆地区）查询官方**降级包**。
+当您需要仍然经过签名且允许降级的旧版官方固件时，此功能非常有用。
+
+### 功能
+- 使用 AES-256-GCM + RSA-OAEP 加密（与官方降级服务器匹配）
+- 需要真实的 **DUID**（来自 *#6776# 的 64 字符 SHA256 字符串）
+- 需要 **PrjNum**（5 位项目编号）
+- 返回下载 URL、更新日志、版本信息、MD5 值和发布时间
+
+### 依赖
+- `requests`
+- `cryptography`
+
+Install:
+```bash
+pip install requests cryptography
+```
+### 使用`downgrade_query.py`的方法
+```bash
+python downgrade_query.py <OTA_PREFIX> <PrjNum> <snNum> <DUID> [--debug 0/1]
+
+# 示例
+python downgrade_query.py PKX110_11.C 24821 a1b2c3e4 498A44DF1BEC4EB19FBCB3A870FCACB4EC7D424979CC9C517FE7B805A1937746
+```
+
+**限制条件**
+
+- `<OTA_PREFIX>`：必须至少包含一个下划线（例如 `PKX110_11.C`）
+- `<PrjNum>`：必须是 5 位数字（例如 `24821`）
+- `<snNum>`：手机序列号
+- `<DUID>`：64 个字符的 SHA256 字符串（通过拨号代码 *#6776# 获取）
+- `[--debug 0/1]`：获取官方降级包的数据
+
+**输出示例**
+```
+Fetch Info:
+• Link: https://...
+• Changelog: ...
+• Published Time: 2025-08-12 14:30:00
+• Version: ColorOS 15.0 (Android 15)
+• Ota Version: PKX110_11.C.12_...
+• MD5: abcdef123456...
+```
+
+### 使用 `downgrade_query_old.py`的方法
+```bash
+python downgrade_query.py <OTA_PREFIX> <PrjNum>
+
+# 示例
+python downgrade_query.py PKX110_11.C 24821
+```
+
+**限制条件**
+
+- `<OTA_PREFIX>`：必须至少包含一个下划线（例如 `PKX110_11.C`）
+- `<PrjNum>`：必须是 5 位数字（例如 `24821`）
+
+**输出示例**
+```
+Fetch Info:
+• Link: https://...
+• Changelog: ...
+• Published Time: 2025-08-12 14:30:00
+• Version: ColorOS 15.0 (Android 15)
+• Ota Version: PKX110_11.C.12_...
+• MD5: abcdef123456...
+```
+
+**注意**：仅适用于支持官方降级的型号/地区。服务器可能会拒绝无效的DUID或项目编号。
+
+## `realme_edl_query.py`
+
+使用realme服务器查询EDL(9008)rom的工具。
+
+ ### 用法
+
+```bash
+python realme_edl_query.py <版本号> <区域> <日期>
+
+# 示例
+python3 realme_edl_query.py "RMX3888_16.0.3.500(CN01)" CN 202601241320
+```
+
+**输出示例**
+```
+查询 RMX8899_16.0.3.532(CN01)
+
+获取信息：
+
+• 链接：https://rms11.realme.net/sw/RMX8899domestic_11_16.0.3.532CN01_2026013016580190.zip
+```
+
+**注意**：您可以从完整的 OTA 版本号中获取日期，即下划线中的第三部分。
+
+ ### 重要说明（2025-2026） 
+ - ColorOS16 系统新增严格的反查询限制（2025年10月左右上线），多数机型可通过 `--anti `1 + `taste` 模式 + 基础版本号（如 `11.A`）绕过该限制。 
  - `downloadCheck?` 格式的动态链接有效期通常为**10-30分钟**，获取后请立即使用- `C16_transer.py` 解析并保存最终下载链接。 
- - 目前 OPEX 和 SOTA 查询功能仅支持**国内版**设备。 
+ - `opex_query.py`、`sota_query.py`、`iot_query.py` 和 `downgrade_query.py` 目前仅`支持中国地区`。
  - 所有工具每次请求都会重新生成加密密钥与设备 ID，以降低被官方服务器封禁的概率。
