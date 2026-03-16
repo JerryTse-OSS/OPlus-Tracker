@@ -22,6 +22,7 @@ Current scripts:
 - `iot_query.py`       → legacy & IoT server query (CN only)
 - `downgrade_query.py` → query official downgrade packages (CN only)
 - `realme_edl_query.py` → query official EDL packages for Realme
+- `changelog_query.py` → query specific version changelog
 
 ## `C16_transer.py`
 
@@ -69,7 +70,7 @@ python tomboy_pro.py <OTA_PREFIX> <REGION> [options]
 
 **Positional**  
 - `<OTA_PREFIX>`     `PJX110` / `PJX110_11.A` / `PJX110_11.C.36_...`  
-- `<REGION>`         `cn` `cn_cmcc` `eu` `in` `sg` `ru` `tr` `th` `gl` `tw` `my` `vn` `id`
+- `<REGION>`         `cn` `cn_cmcc` `eu` `in` `sg` `ru` `tr` `th` `gl` `tw` `my` `vn` `id` `sa` `mea` `ph` `la` `br` `roe`
 
 **Popular flags**
 | Flag              | Meaning                                          | Example / Note                       |
@@ -82,6 +83,7 @@ python tomboy_pro.py <OTA_PREFIX> <REGION> [options]
 | `--guid 64hex`    | 64-char device GUID                              | Required for pre/taste               |
 | `--components`    | Delta query (name:fullversion,...)               | `--components System:PJX110_11...`   |
 | `--anti 1`        | Bypass ColorOS 16 query restriction (~Oct 2025)  | Usually + `--mode taste`             |
+| `--nvid 8digit`    | Use custom NV Carrier ID to query                |                                      |
 
 **Examples**
 ```bash
@@ -96,6 +98,9 @@ python tomboy_pro.py PJX110_11.C.36_1360_20250814 cn --components System:PJX110_
 
 # Preview with GUID
 python tomboy_pro.py PJX110_11.A cn --pre 1 --guid 0123456789abcdef... (64 chars)
+
+# Custom NVID
+python tomboy_pro.py RMX3301_11.H sg --nvid 00011011
 ```
 
 **Note**: Get Delta OTA is pretty special, you may get the components info by run `getprop | grep ro.oplus.version | sed -E 's/\[ro\.oplus\.version\.([^]]+)\]: \[([^]]+)\]/\1:\2/g' | tr '\n' ',' | sed 's/,$//' | sed 's/base/system_vendor/g'` in your device, and make sure using the full OTA version and the same version as your component
@@ -228,6 +233,20 @@ Fetch Info:
 ```
 
 **Note**: You may get the date from full OTA Version, the third part in `_`
+
+## `changelog_query.py`
+
+Query for specific version changelog
+
+### Usage
+```bash
+python3 changelog_query.py <OTA_VERSION>
+
+# Examples
+python3 changelog_query.py PJD110_11.F.39_2390
+```
+
+**Note**: You are allow not to use full OTA Version, but needed two `_` at least(include Version & Version Code)
 
 ### Important Notes (2025–2026)
 - ColorOS 16 introduced strong anti-query restrictions (~Oct 2025). Use `--anti 1` + `taste` mode + base version (e.g. `11.A`) in `tomboy_pro.py` to bypass on many models.
