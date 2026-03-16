@@ -1,0 +1,8 @@
+// Cloudflare Workers configuration for OPlus Tracker API
+// Python Workers support: https://developers.cloudflare.com/workers/languages/python/
+{
+  "name": "oplus-tracker-api",
+  "main": "api/main.py",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": ["python_workers"]
+}

@@ -1,5 +1,4 @@
 cryptography==44.0.2
 requests
-pycryptodome
-beautifulsoup4
-protobuf
+fastapi
+uvicorn[standard]
