@@ -238,12 +238,16 @@ Fetch Info:
 
 Query for specific version changelog
 
+**Positional**  
+- `<OTA_PREFIX>`     `PJD110_11.F.39_2390`  
+- `<REGION>`         `cn` `cn_cmcc` `eu` `in` `sg` `ru` `tr` `th` `gl` `tw` `my` `vn` `id` `sa` `mea` `ph` `la` `br` `roe`
+
 ### Usage
 ```bash
-python3 changelog_query.py <OTA_VERSION>
+python3 changelog_query.py <OTA_VERSION> <REGION>
 
 # Examples
-python3 changelog_query.py PJD110_11.F.39_2390
+python3 changelog_query.py PJD110_11.F.39_2390 CN
 ```
 
 **Note**: You are allow not to use full OTA Version, but needed two `_` at least(include Version & Version Code)
