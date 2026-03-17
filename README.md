@@ -238,9 +238,10 @@ Fetch Info:
 
 Query for specific version changelog
 
-**Positional**  
+**Constraints**  
 - `<OTA_PREFIX>`     `PJD110_11.F.39_2390`  
 - `<REGION>`         `cn` `cn_cmcc` `eu` `in` `sg` `ru` `tr` `th` `gl` `tw` `my` `vn` `id` `sa` `mea` `ph` `la` `br` `roe`
+- `[--pre 0/1]` : Get Testing Version / Testing devices changelogs
 
 ### Usage
 ```bash
@@ -248,6 +249,8 @@ python3 changelog_query.py <OTA_VERSION> <REGION>
 
 # Examples
 python3 changelog_query.py PJD110_11.F.39_2390 CN
+
+python3 changelog_query.py PLP110_11.A.40_0400 CN --pre 1
 ```
 
 **Note**: You are allow not to use full OTA Version, but needed two `_` at least(include Version & Version Code)

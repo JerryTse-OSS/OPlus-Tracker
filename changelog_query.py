@@ -39,6 +39,49 @@ def extract_url_from_link(link_str: str) -> str:
     match = re.search(r'href\s*=\s*"([^"]+)"', link_str)
     return match.group(1) if match else link_str.strip()
 
+def process_version_prefix(orig_prefix: str, pre_flag: int = None):
+    """
+    Process the version prefix based on pre_flag.
+    Returns (model, adjusted_prefix) where:
+        - model: pure model name (without PRE) for headers
+        - adjusted_prefix: version string to use for full version (may include PRE based on flag)
+    pre_flag:
+        - None: keep original version string unchanged
+        - 0: ensure version string does NOT contain PRE (strip if present)
+        - 1: ensure version string contains PRE (add if absent)
+    """
+    parts = orig_prefix.split('_', 1)
+    if len(parts) != 2:
+        # Should not happen due to earlier validation
+        model_part = parts[0]
+        rest = ''
+    else:
+        model_part, rest = parts[0], '_' + parts[1]
+
+    # Pure model without PRE (always for headers)
+    pure_model = model_part.replace('PRE', '')
+
+    if pre_flag is None:
+        # Keep original version string unchanged
+        adjusted_prefix = orig_prefix
+    elif pre_flag == 1:
+        # Ensure version string contains PRE
+        if 'PRE' in model_part:
+            adjusted_prefix = orig_prefix  # already has PRE
+        else:
+            # Add PRE
+            new_model_part = model_part + 'PRE'
+            adjusted_prefix = new_model_part + rest
+    else:  # pre_flag == 0
+        # Ensure version string does NOT contain PRE
+        if 'PRE' in model_part:
+            # Remove PRE
+            adjusted_prefix = pure_model + rest
+        else:
+            adjusted_prefix = orig_prefix  # no PRE, keep as is
+
+    return pure_model, adjusted_prefix
+
 def format_output(data: dict, region: str) -> None:
     upg_inst_detail = data.get('upgInstDetail', [])
     if not upg_inst_detail:
@@ -94,40 +137,71 @@ def format_output(data: dict, region: str) -> None:
 def print_usage():
     available = ", ".join(sorted(VALID_REGIONS))
     print("\nUsage:")
-    print(f"  python3 {sys.argv[0]} <OTA_Prefix> <region>")
+    print(f"  python3 {sys.argv[0]} <OTA_Prefix> <region> [--pre 0|1]")
     print("\nConstraints:")
     print("  <OTA_Prefix> : Must contain exactly two underscores (e.g., PHN110_11.H.19_3190)")
     print(f"  <region>     : One of: {available}")
+    print("  --pre        : Optional. Controls whether version string contains 'PRE'.")
+    print("                 - 1: Ensure version string includes PRE (add if missing)")
+    print("                 - 0: Ensure version string does NOT include PRE (strip if present)")
+    print("                 If omitted, version string is used as provided (PRE preserved if present).")
     print("\nExample:")
     print(f"  python3 {sys.argv[0]} PHN110_11.H.19_3190 cn")
+    print(f"  python3 {sys.argv[0]} PLP110PRE_11.A.01_0010 cn --pre 1")
+    print(f"  python3 {sys.argv[0]} PLP110_11.A.01_0010 cn --pre 1")
 
 def main():
-    if len(sys.argv) != 3:
+    # Parse arguments
+    args = sys.argv[1:]
+    pre_flag = None
+
+    i = 0
+    while i < len(args):
+        if args[i] == '--pre':
+            if i + 1 >= len(args):
+                print("❌ Error: --pre requires a value (0 or 1)")
+                sys.exit(1)
+            val = args[i+1]
+            if val not in ('0', '1'):
+                print("❌ Error: --pre value must be 0 or 1")
+                sys.exit(1)
+            pre_flag = int(val)
+            # Remove --pre and its value
+            del args[i:i+2]
+            break
+        i += 1
+
+    # Now args should contain exactly two positional arguments
+    if len(args) != 2:
         print_usage()
         sys.exit(1)
 
-    version_prefix = sys.argv[1]
-    region = sys.argv[2]
+    version_prefix = args[0]
+    region = args[1]
 
+    # Validate exactly two underscores in the original prefix
     if version_prefix.count('_') != 2:
         print(f"\n❌ Error: OTA_Prefix '{version_prefix}' must contain exactly two underscores.")
         print_usage()
         sys.exit(1)
 
+    # Validate region
     if region not in VALID_REGIONS:
         available = ", ".join(sorted(VALID_REGIONS))
         print(f"\n❌ Error: Invalid region '{region}'. Available regions: {available}")
         sys.exit(1)
 
-    model = version_prefix.split('_')[0]
+    # Process PRE handling
+    model, adjusted_prefix = process_version_prefix(version_prefix, pre_flag)
 
+    # Build configuration
     if region in ["cn", "cn_cmcc", "eu", "in"]:
         config = REGION_CONFIG[region]
     else:
         config = REGION_CONFIG["sg_host"].copy()
         config.update(REGION_CONFIG[region])
 
-    full_version = version_prefix + "_197001010000"
+    full_version = adjusted_prefix + "_197001010000"
 
     url = "https://" + config["host"] + "/descriptionInfo"
     headers = {
