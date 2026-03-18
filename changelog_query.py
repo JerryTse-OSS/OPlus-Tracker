@@ -96,7 +96,11 @@ def format_output(data: dict, region: str) -> None:
         if 'children' in item:
             if first_printed:
                 print()
+            first_child = True
             for child in item['children']:
+                if not first_child:
+                    print()  # blank line between child sections
+                first_child = False
                 title = child.get('title', '')
                 content_list = child.get('content', [])
                 if title:
