@@ -18,7 +18,8 @@ Current scripts:
 - `C16_transer.py`     → resolves dynamic download links (ColorOS 16+)
 - `tomboy_pro.py`      → main OTA query tool (full / delta / gray / preview / anti-query bypass)
 - `opex_query.py`      → dedicated OPEX query (CN only)
-- `sota_query.py`      → SOTA (Software OTA / modular APK) query (CN only)
+- `sota_query.py`      → SOTA (Software OTA / modular APK) query (CN only yet)
+- `sota_changelog_query.py`      → SOTA (Software OTA / modular APK) Changelog query (CN only yet)
 - `iot_query.py`       → legacy & IoT server query (CN only)
 - `downgrade_query.py` → query official downgrade packages (CN only)
 - `realme_edl_query.py` → query official EDL packages for Realme
@@ -133,6 +134,20 @@ python sota_query.py --brand OnePlus --ota-version PJX110_11.F.15_2150_202602051
 ```
 
 **Note**: All 3 parameters are **required** (check the example)
+
+## `sota_changelog_query.py`
+
+Queries **SOTA** (Software OTA) changelog — mainly for CN ColorOS System APPs updates.
+
+### Usage
+```bash
+python sota_query.py --brand BRAND --ota-version OTA_VERSION --coloros COLOROS
+
+# Examples
+python sota_query.py --brand OnePlus --ota-version PJX110_11.F.15_2150_202602051458 --coloros ColorOS16.0.0
+```
+
+**Note**: The same as `sota_query.py` but query for changelog only
 
 ## `iot_query.py`
 
