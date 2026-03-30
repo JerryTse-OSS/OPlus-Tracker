@@ -557,6 +557,8 @@ def parse_args():
     group_ota.add_argument("--components", help="Custom components (name:version)")
     group_ota.add_argument("--anti", type=int, choices=[0, 1], default=0, help="Anti mode")
     group_ota.add_argument("--nvid", type=str, help="Custom NV Carrier ID (8 digits)")
+    # New argument for graynew mode
+    parser.add_argument("--graynew", type=int, choices=[0, 1], default=0,help="Query FWs not in taste mode but in gray server")
     
     args = parser.parse_args()
     
@@ -584,6 +586,53 @@ def main():
             nvid=args.nvid
         )
 
+        if args.graynew == 1:
+            taste_config = QueryConfig(
+                ota_version=args.ota_prefix, model=args.model or "unknown", region=args.region,
+                gray=args.gray, mode="taste", guid=args.guid, components_input=args.components,
+                anti=args.anti, has_custom_model=bool(args.model), genshin=args.genshin, pre=args.pre,
+                custom_language=args.custom_language,
+                nvid=args.nvid
+            )
+            processed_ota, processed_model = process_ota_version(
+                taste_config.ota_version, args.region, args.genshin, args.pre, args.model
+            )
+            taste_config.ota_version = processed_ota
+            taste_config.model = processed_model
+
+            result_taste = query_update(taste_config)
+            if not result_taste.success or not result_taste.data:
+                sys.exit(f"Failed to get OTA version")
+
+            new_ota_version = result_taste.data.get("ota_version", "N/A")
+            if new_ota_version == "N/A" or not new_ota_version:
+                sys.exit("No OTA version found in response")
+
+            final_config = QueryConfig(
+                ota_version=new_ota_version, model=args.model or "unknown", region=args.region,
+                gray=1, mode=args.mode, guid=args.guid, components_input=args.components,
+                anti=args.anti, has_custom_model=bool(args.model), genshin="0", pre="0",
+                custom_language=args.custom_language,
+                nvid=args.nvid
+            )
+            processed_ota2, processed_model2 = process_ota_version(
+                final_config.ota_version, args.region, final_config.genshin, final_config.pre, args.model
+            )
+            final_config.ota_version = processed_ota2
+            final_config.model = processed_model2
+
+            print(f"Querying {args.region.upper()} update")
+            print(f"Device Model: {final_config.model}")
+            print(f"Full OTA Version: {final_config.ota_version}")
+            if final_config.guid == "0"*64:
+                print("Using GUID: Default device ID")
+            else:
+                print(f"Using GUID: {final_config.guid[:16]}")
+
+            result_final = query_update(final_config)
+            display_result(result_final)
+            return
+
         ota_upper = args.ota_prefix.upper().replace("OVT", "Ovt")
         processed_ota, processed_model = process_ota_version(
             ota_upper, args.region, args.genshin, args.pre, args.model
@@ -599,10 +648,8 @@ def main():
             auto_complete_query(ota_upper, config)
         else:
             print(f"Querying {config.region.upper()} update")
-            
             print(f"Device Model: {config.model}")
             print(f"Full OTA Version: {config.ota_version}")
-            
             if config.guid == "0"*64:
                 print("Using GUID: Default device ID")
             else:

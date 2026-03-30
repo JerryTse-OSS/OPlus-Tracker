@@ -85,6 +85,7 @@ python tomboy_pro.py <OTA_PREFIX> <REGION> [options]
 | `--components`    | Delta query (name:fullversion,...)               | `--components System:PJX110_11...`   |
 | `--anti 1`        | Bypass ColorOS 16 query restriction (~Oct 2025)  | Usually + `--mode taste`             |
 | `--nvid 8digit`    | Use custom NV Carrier ID to query                |                                      |
+| `--graynew 1`     | Query FWs not in taste mode but in gray server     |                                      |
 
 **Examples**
 ```bash
