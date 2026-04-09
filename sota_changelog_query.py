@@ -67,6 +67,13 @@ def generate_protected_key(aes_key: bytes, public_key_pem: str) -> str:
 
 # --- Common Functions ---
 
+def parse_brand(brand_str: str) -> str:
+    brand_lower = brand_str.strip().lower()
+    if brand_lower == "oppo": return "OPPO"
+    elif brand_lower == "oneplus": return "OnePlus"
+    elif brand_lower == "realme": return "Realme"
+    else: sys.exit(f"Error: Invalid brand '{brand_str}'. Supported: OPPO, OnePlus, Realme")
+
 def build_headers(aes_key: bytes, public_key: str, config: Dict[str, str], is_update_request: bool = False) -> Dict[str, str]:
     protected_key_payload = generate_protected_key(aes_key, public_key)
     timestamp = str(time.time_ns() + 10**9 * 60 * 60 * 24)
@@ -378,9 +385,11 @@ def main(args):
         print("                       --ota-version PJX110_11.F.13_2130_202512181912 \\")
         print("                       --coloros ColorOS16.0.0 \\")
         return
+    
+    brand = parse_brand(args.brand)
 
     config = {
-        "brand": args.brand,
+        "brand": brand,
         "ota_version": args.ota_version,
         "model": args.ota_version.split('_')[0],
         "coloros": args.coloros,
