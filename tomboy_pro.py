@@ -135,6 +135,7 @@ class QueryConfig:
     pre: str = "0"
     custom_language: Optional[str] = None
     nvid: Optional[str] = None
+    graynew: str = "0"
 
 def generate_imei():
     return ''.join(map(str, [random.randint(0, 9) for _ in range(15)]))
@@ -489,11 +490,11 @@ def display_result(result: QueryResult):
         else:
             print("\nUnknown Error")
 
-def auto_complete_query(base_ota_prefix: str, config: QueryConfig, graynew_mode: bool = False) -> None:
+def auto_complete_query(base_ota_prefix: str, config: QueryConfig) -> None:
     suffixes = ["_11.A", "_11.C", "_11.F", "_11.H", "_11.J"]
     last_success_fake = None
 
-    if graynew_mode:
+    if config.graynew == 1:
         for suffix in suffixes:
             candidate = base_ota_prefix + suffix
             print(f"\nQuerying for {candidate}")
@@ -624,13 +625,9 @@ def main():
             gray=args.gray, mode=args.mode, guid=args.guid, components_input=args.components,
             anti=args.anti, has_custom_model=bool(args.model), genshin=args.genshin, pre=args.pre,
             custom_language=args.custom_language,
-            nvid=args.nvid
+            nvid=args.nvid, graynew=args.graynew
         )
 
-        if args.graynew == 1:
-            auto_complete_query(args.ota_prefix, config, graynew_mode=True)
-            return
-        
         ota_upper = args.ota_prefix.upper().replace("OVT", "Ovt")
         processed_ota, processed_model = process_ota_version(
             ota_upper, args.region, args.genshin, args.pre, args.model
