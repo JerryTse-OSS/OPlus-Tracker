@@ -4,22 +4,19 @@ SOTA(Software OTA) Query
 Designed by Jerry Tse
 """
 
-import sys
-import os
-import json
-import base64
-import time
-import re
 import argparse
-from typing import Dict, Any, Optional, Tuple, List
-from datetime import datetime
+import base64
+import json
+import os
+import sys
+import time
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from config import SOTA_CONFIG
 

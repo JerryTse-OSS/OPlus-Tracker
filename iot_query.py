@@ -4,20 +4,18 @@ IoT Query Tool - Specialized for ColorOS iota server
 Designed by Jerry Tse
 """
 
-import sys
-import json
-import base64
-import time
-import random
-import string
 import argparse
+import base64
+import json
+import random
 import re
-from typing import Dict, Optional, Tuple, Any
-from dataclasses import dataclass
+import string
+import time
+from typing import Dict, Tuple
 
 import requests
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from config import IOT_CONFIG
 

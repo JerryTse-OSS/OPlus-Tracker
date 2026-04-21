@@ -4,24 +4,23 @@ Opex Query Tool
 Designed by Jerry Tse
 """
 
-import sys
-import os
-import json
-import base64
-import time
 import argparse
-import re
+import base64
+import json
+import os
 import random
+import re
 import string
-from typing import Dict, List, Optional
+import sys
+import time
 from dataclasses import dataclass
+from typing import Dict
 
 import requests
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from config import OPEX_CONFIG
 

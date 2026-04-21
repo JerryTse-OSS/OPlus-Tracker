@@ -4,29 +4,27 @@ OTA Query Tool - Query OTA update information for OPPO/OnePlus/Realme devices
 Designed by: Jerry Tse
 """
 
-import sys
-import os
-import json
-import base64
-import time
-import random
-import string
 import argparse
-import gzip
+import base64
 import binascii
+import json
+import os
+import random
 import re
-from typing import Dict, List, Tuple, Optional, Any
+import string
+import sys
+import time
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from config import OTA_PUBLIC_KEYS, OTA_REGION_CONFIG, IOT_CONFIG
+from config import IOT_CONFIG, OTA_PUBLIC_KEYS, OTA_REGION_CONFIG
 
 PUBLIC_KEYS = OTA_PUBLIC_KEYS
 

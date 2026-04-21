@@ -4,12 +4,13 @@ Query official EDL packages for Realme
 Designed by Jerry Tse
 """
 
-import sys
-import re
 import argparse
-import requests
 import os
+import re
 from concurrent.futures import ThreadPoolExecutor
+
+import requests
+
 
 def check_url(url):
     try:

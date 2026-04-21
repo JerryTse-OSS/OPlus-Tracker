@@ -4,19 +4,19 @@ ColorOS Downgrade Query Tool
 Designed by Jerry Tse
 """
 
-import sys
-import os
-import json
-import base64
-import time
 import argparse
+import base64
+import json
+import os
+import sys
+import time
 from typing import Dict, Optional
 
 import requests
-from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
 
 from config import DOWNGRADE_CONFIG
 

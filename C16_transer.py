@@ -4,15 +4,13 @@ Resolves dynamic download links (ColorOS 16+)
 Designed by Jerry Tse
 """
 
-import requests
-import sys
-import json
-import base64
 import argparse
-from datetime import datetime, timedelta
-import time
-import urllib.parse
+import base64
+from datetime import datetime
 from urllib.parse import parse_qs, urlparse
+
+import requests
+
 
 def android_request(url, method='GET', data=None, headers=None, allow_redirects=False, timeout=30, max_retries=3):
     

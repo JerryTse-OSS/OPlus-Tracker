@@ -4,10 +4,11 @@ ColorOS Update Log Query Tool
 Designed by Jerry Tse
 """
 
-import sys
-import re
-import json
 import argparse
+import json
+import re
+import sys
+
 import requests
 
 from config import OTA_REGION_CONFIG
