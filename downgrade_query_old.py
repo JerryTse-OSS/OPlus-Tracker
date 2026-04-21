@@ -28,46 +28,66 @@ REAL_PUB_KEY = DOWNGRADE_CONFIG["public_key"]
 
 # --- Crypto Helpers ---
 
+
 def get_protected_key(session_key_bytes: bytes) -> str:
-    pub_key = serialization.load_pem_public_key(REAL_PUB_KEY.encode(), backend=default_backend())
+    pub_key = serialization.load_pem_public_key(
+        REAL_PUB_KEY.encode(), backend=default_backend()
+    )
     rsa_input = base64.b64encode(session_key_bytes)
     encrypted_bytes = pub_key.encrypt(
         rsa_input,
-        padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA1()), algorithm=hashes.SHA1(), label=None)
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA1()),
+            algorithm=hashes.SHA1(),
+            label=None,
+        ),
     )
     return base64.b64encode(encrypted_bytes).decode()
 
+
 def encrypt_aes_gcm(plaintext: str, key: bytes, iv: bytes) -> Dict[str, str]:
-    encryptor = Cipher(algorithms.AES(key), modes.GCM(iv), backend=default_backend()).encryptor()
+    encryptor = Cipher(
+        algorithms.AES(key), modes.GCM(iv), backend=default_backend()
+    ).encryptor()
     ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
     return {
         "cipher": base64.b64encode(ciphertext + encryptor.tag).decode(),
-        "iv": base64.b64encode(iv).decode()
+        "iv": base64.b64encode(iv).decode(),
     }
+
 
 def decrypt_aes_gcm(cipher_b64: str, iv_b64: str, key: bytes) -> Optional[bytes]:
     try:
         full_cipher = base64.b64decode(cipher_b64)
         iv = base64.b64decode(iv_b64)
         tag, ciphertext = full_cipher[-16:], full_cipher[:-16]
-        decryptor = Cipher(algorithms.AES(key), modes.GCM(iv, tag), backend=default_backend()).decryptor()
+        decryptor = Cipher(
+            algorithms.AES(key), modes.GCM(iv, tag), backend=default_backend()
+        ).decryptor()
         return decryptor.update(ciphertext) + decryptor.finalize()
     except Exception:
         return None
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description='ColorOS Downgrade Query Tool',
+        description="ColorOS Downgrade Query Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Example:
   python3 %(prog)s PKX110_11.C 24821
-"""
+""",
     )
-    parser.add_argument('ota_prefix', metavar='OTA_Prefix',
-                        help='OTA prefix containing an underscore (e.g., PKX110_11.C)')
-    parser.add_argument('prj_num', metavar='PrjNum',
-                        help='Project number, exactly 5 digits (e.g., 24821)')
+    parser.add_argument(
+        "ota_prefix",
+        metavar="OTA_Prefix",
+        help="OTA prefix containing an underscore (e.g., PKX110_11.C)",
+    )
+    parser.add_argument(
+        "prj_num",
+        metavar="PrjNum",
+        help="Project number, exactly 5 digits (e.g., 24821)",
+    )
     args = parser.parse_args()
 
     ota_version = args.ota_prefix.upper()
@@ -78,7 +98,7 @@ Example:
 
     if not prj_num.isdigit() or len(prj_num) != 5:
         parser.error(f"PrjNum '{prj_num}' must be exactly 5 digits.")
-    
+
     model = ota_version.split("_")[0]
     duid = "0" * 64
     requests.packages.urllib3.disable_warnings()
@@ -94,20 +114,20 @@ Example:
         try:
             protected_key = get_protected_key(session_key)
             encrypted_device_id_obj = encrypt_aes_gcm(duid, session_key, iv)
-            
+
             payload = {
                 "model": model,
                 "nvCarrier": current_carrier,
                 "prjNum": prj_num,
                 "otaVersion": ota_version,
-                "deviceId": encrypted_device_id_obj
+                "deviceId": encrypted_device_id_obj,
             }
 
             cipher_info = {
                 "downgrade-server": {
                     "negotiationVersion": NEGOTIATION_VERSION,
                     "protectedKey": protected_key,
-                    "version": str(int(time.time()))
+                    "version": str(int(time.time())),
                 }
             }
 
@@ -116,21 +136,26 @@ Example:
                 "Content-Type": "application/json; charset=UTF-8",
                 "cipherInfo": json.dumps(cipher_info),
                 "deviceId": duid,
-                "Connection": "close"
+                "Connection": "close",
             }
 
-            resp = requests.post(URL, headers=headers, json=payload, timeout=20, verify=False)
+            resp = requests.post(
+                URL, headers=headers, json=payload, timeout=20, verify=False
+            )
 
             if resp.status_code == 200:
                 resp_json = resp.json()
 
                 final_data = None
                 if "cipher" in resp_json:
-                    decrypted_bytes = decrypt_aes_gcm(resp_json["cipher"], resp_json["iv"], session_key)
+                    decrypted_bytes = decrypt_aes_gcm(
+                        resp_json["cipher"], resp_json["iv"], session_key
+                    )
                     if decrypted_bytes:
                         try:
                             final_data = json.loads(decrypted_bytes)
-                        except: pass
+                        except:
+                            pass
                 else:
                     final_data = resp_json
 
@@ -143,16 +168,22 @@ Example:
                             for i, pkg in enumerate(pkg_list):
                                 print("Fetch Info:")
                                 print(f"• Link: {pkg.get('downloadUrl', 'N/A')}")
-                                print(f"• Changelog: {pkg.get('versionIntroduction', 'N/A')}")
-                                print(f"• Version: {pkg.get('colorosVersion', '')} ({pkg.get('androidVersion', '')})")
+                                print(
+                                    f"• Changelog: {pkg.get('versionIntroduction', 'N/A')}"
+                                )
+                                print(
+                                    f"• Version: {pkg.get('colorosVersion', '')} ({pkg.get('androidVersion', '')})"
+                                )
                                 print(f"• Ota Version: {pkg.get('otaVersion', 'N/A')}")
                                 print(f"• MD5: {pkg.get('fileMd5', 'N/A')}")
-                                
-                                file_size = pkg.get('fileSize')
+
+                                file_size = pkg.get("fileSize")
                                 if file_size is not None:
                                     try:
                                         size_mb = float(file_size) / 1024 / 1024
-                                        print(f"• File Size: {file_size} Byte ({size_mb:.0f}M)")
+                                        print(
+                                            f"• File Size: {file_size} Byte ({size_mb:.0f}M)"
+                                        )
                                     except:
                                         print(f"• File Size: {file_size} Byte (N/A)")
                                 else:
@@ -160,9 +191,9 @@ Example:
 
                                 if i < len(pkg_list) - 1:
                                     print()
-                            
+
                             return
-                            
+
                     if idx == 0:
                         time.sleep(1)
                         continue
@@ -182,6 +213,7 @@ Example:
                 continue
             print(f"[!] Network Error: {e}")
             break
+
 
 if __name__ == "__main__":
     try:

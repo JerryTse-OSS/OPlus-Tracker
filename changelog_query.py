@@ -18,9 +18,11 @@ REGION_CONFIG = OTA_REGION_CONFIG
 VALID_REGIONS = [r for r in REGION_CONFIG.keys() if r != "sg_host"]
 CHINA_REGIONS = ["cn", "cn_cmcc"]  # Use bullet prefix for Chinese regions
 
+
 def extract_url_from_link(link_str: str) -> str:
     match = re.search(r'href\s*=\s*"([^"]+)"', link_str)
     return match.group(1) if match else link_str.strip()
+
 
 def process_version_prefix(orig_prefix: str, pre_flag: int = None):
     """
@@ -33,31 +35,31 @@ def process_version_prefix(orig_prefix: str, pre_flag: int = None):
         - 0: ensure version string does NOT contain PRE (strip if present)
         - 1: ensure version string contains PRE (add if absent)
     """
-    parts = orig_prefix.split('_', 1)
+    parts = orig_prefix.split("_", 1)
     if len(parts) != 2:
         # Should not happen due to earlier validation
         model_part = parts[0]
-        rest = ''
+        rest = ""
     else:
-        model_part, rest = parts[0], '_' + parts[1]
+        model_part, rest = parts[0], "_" + parts[1]
 
     # Pure model without PRE (always for headers)
-    pure_model = model_part.replace('PRE', '')
+    pure_model = model_part.replace("PRE", "")
 
     if pre_flag is None:
         # Keep original version string unchanged
         adjusted_prefix = orig_prefix
     elif pre_flag == 1:
         # Ensure version string contains PRE
-        if 'PRE' in model_part:
+        if "PRE" in model_part:
             adjusted_prefix = orig_prefix  # already has PRE
         else:
             # Add PRE
-            new_model_part = model_part + 'PRE'
+            new_model_part = model_part + "PRE"
             adjusted_prefix = new_model_part + rest
     else:  # pre_flag == 0
         # Ensure version string does NOT contain PRE
-        if 'PRE' in model_part:
+        if "PRE" in model_part:
             # Remove PRE
             adjusted_prefix = pure_model + rest
         else:
@@ -65,8 +67,9 @@ def process_version_prefix(orig_prefix: str, pre_flag: int = None):
 
     return pure_model, adjusted_prefix
 
+
 def format_output(data: dict, region: str) -> None:
-    upg_inst_detail = data.get('upgInstDetail', [])
+    upg_inst_detail = data.get("upgInstDetail", [])
     if not upg_inst_detail:
         print("No update details found.")
         return
@@ -76,20 +79,24 @@ def format_output(data: dict, region: str) -> None:
 
     for item in upg_inst_detail:
         # Regular update categories (with children)
-        if 'children' in item:
+        if "children" in item:
             if first_printed:
                 print()
             first_child = True
-            for child in item['children']:
+            for child in item["children"]:
                 if not first_child:
                     print()  # blank line between child sections
                 first_child = False
-                title = child.get('title', '')
-                content_list = child.get('content', [])
+                title = child.get("title", "")
+                content_list = child.get("content", [])
                 if title:
                     print(title)
                 for content_item in content_list:
-                    text = content_item.get('data', '') if isinstance(content_item, dict) else content_item
+                    text = (
+                        content_item.get("data", "")
+                        if isinstance(content_item, dict)
+                        else content_item
+                    )
                     if text:
                         if use_bullet:
                             print(f"· {text}")
@@ -98,44 +105,48 @@ def format_output(data: dict, region: str) -> None:
             first_printed = True
 
         # Link item (may have content text, or just link)
-        elif 'link' in item:
+        elif "link" in item:
             if first_printed:
                 print()
-            content_text = item.get('content', '')
+            content_text = item.get("content", "")
             if content_text:
                 print(content_text)
-            link_html = item.get('link', '')
+            link_html = item.get("link", "")
             if link_html:
                 url = extract_url_from_link(link_html)
                 print(url)
             first_printed = True
 
         # Important notes (multilingual)
-        elif item.get('type') == 'updateTips':
+        elif item.get("type") == "updateTips":
             if first_printed:
                 print()
-            title = item.get('title', 'Important Notes')
+            title = item.get("title", "Important Notes")
             print(title)
-            tips_content = item.get('content', '')
+            tips_content = item.get("content", "")
             if tips_content:
                 print(tips_content)
             first_printed = True
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description='ColorOS Update Log Query Tool',
+        description="ColorOS Update Log Query Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Example:
   python3 %(prog)s PHN110_11.H.19_3190
-"""
+""",
     )
-    parser.add_argument('ota_prefix', metavar='OTA_Prefix',
-                        help='OTA prefix containing exactly two underscores (e.g., PHN110_11.H.19_3190)')
-    
-    parser.add_argument('region', choices=sorted(VALID_REGIONS), help='Region code')
     parser.add_argument(
-        '--pre',
+        "ota_prefix",
+        metavar="OTA_Prefix",
+        help="OTA prefix containing exactly two underscores (e.g., PHN110_11.H.19_3190)",
+    )
+
+    parser.add_argument("region", choices=sorted(VALID_REGIONS), help="Region code")
+    parser.add_argument(
+        "--pre",
         type=int,
         choices=[0, 1],
         default=None,
@@ -144,7 +155,7 @@ Example:
             "  1: Ensure version string includes PRE (add if missing)\n"
             "  0: Ensure version string does NOT include PRE (strip if present)\n"
             "  If omitted, version string is used as provided."
-        )
+        ),
     )
     args = parser.parse_args()
 
@@ -153,8 +164,10 @@ Example:
     pre_flag = args.pre
 
     # Validate exactly two underscores in the original prefix
-    if version_prefix.count('_') != 2:
-        parser.error(f"OTA_Prefix '{version_prefix}' must contain exactly two underscores.")
+    if version_prefix.count("_") != 2:
+        parser.error(
+            f"OTA_Prefix '{version_prefix}' must contain exactly two underscores."
+        )
 
     # Validate region
     if region not in VALID_REGIONS:
@@ -184,13 +197,13 @@ Example:
         "otaVersion": full_version,
         "model": model,
         "androidVersion": "unknown",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
     inner_params = {
         "mode": 0,
         "maskOtaVersion": full_version,
         "bigVersion": 0,
-        "h5LinkVersion": 6
+        "h5LinkVersion": 6,
     }
     payload = {"params": json.dumps(inner_params, ensure_ascii=False)}
 
@@ -212,15 +225,15 @@ Example:
         print("❌ Response is not valid JSON.")
         sys.exit(1)
 
-    if resp_json.get('responseCode') == 500 and resp_json.get('errMsg') == 'no modify':
+    if resp_json.get("responseCode") == 500 and resp_json.get("errMsg") == "no modify":
         print("No changelog in Server")
         sys.exit(0)
 
-    if resp_json.get('responseCode') != 200:
+    if resp_json.get("responseCode") != 200:
         print(f"❌ API returned error code: {resp_json.get('responseCode')}")
         sys.exit(1)
 
-    body_str = resp_json.get('body')
+    body_str = resp_json.get("body")
     if not body_str:
         print("❌ No 'body' field in response.")
         sys.exit(1)
@@ -232,6 +245,7 @@ Example:
         sys.exit(1)
 
     format_output(inner_data, region)
+
 
 if __name__ == "__main__":
     try:

@@ -37,17 +37,45 @@ waK+T0HfLusVJshDaMrMiQFDUiKajb+QKr+bXQhVofH74fjat+oRJ8vjXARSpFk4
 u4HFpQDlQl7GdqDYDj2zNOHdFQI2UpSf0aIeKCKOpSKF72KDEESpJVQsqO4nxMwE
 i2jMujQeCHyTCjBZ+W35RzwT9+0pyZv8FB3c7FYY9FdF/+lvfax5mvFEBd9jO+dp
 MQIDAQAB
------END RSA PUBLIC KEY-----"""
+-----END RSA PUBLIC KEY-----""",
 }
 
 # --- OTA Region Configuration ---
 OTA_REGION_CONFIG = {
-    "cn": {"host": "component-ota-cn.allawntech.com", "language": "zh-CN", "carrier_id": "10010111", "public_key_version": "1615879139745"},
-    "cn_cmcc": {"host": "component-ota-cn.allawntech.com", "language": "zh-CN", "carrier_id": "10011000", "public_key_version": "1615879139745"},
-    "cn_gray": {"host": "component-ota-gray.coloros.com", "language": "zh-CN", "carrier_id": "10010111", "public_key_version": "1615879139745"},
-    "eu": {"host": "component-ota-eu.allawnos.com", "language": "en-GB", "carrier_id": "01000100", "public_key_version": "1615897067573"},
-    "in": {"host": "component-ota-in.allawnos.com", "language": "en-IN", "carrier_id": "00011011", "public_key_version": "1615896309308"},
-    "sg_host": {"host": "component-ota-sg.allawnos.com", "public_key_version": "1615895993238"},
+    "cn": {
+        "host": "component-ota-cn.allawntech.com",
+        "language": "zh-CN",
+        "carrier_id": "10010111",
+        "public_key_version": "1615879139745",
+    },
+    "cn_cmcc": {
+        "host": "component-ota-cn.allawntech.com",
+        "language": "zh-CN",
+        "carrier_id": "10011000",
+        "public_key_version": "1615879139745",
+    },
+    "cn_gray": {
+        "host": "component-ota-gray.coloros.com",
+        "language": "zh-CN",
+        "carrier_id": "10010111",
+        "public_key_version": "1615879139745",
+    },
+    "eu": {
+        "host": "component-ota-eu.allawnos.com",
+        "language": "en-GB",
+        "carrier_id": "01000100",
+        "public_key_version": "1615897067573",
+    },
+    "in": {
+        "host": "component-ota-in.allawnos.com",
+        "language": "en-IN",
+        "carrier_id": "00011011",
+        "public_key_version": "1615896309308",
+    },
+    "sg_host": {
+        "host": "component-ota-sg.allawnos.com",
+        "public_key_version": "1615895993238",
+    },
     "sg": {"language": "en-SG", "carrier_id": "01011010"},
     "ru": {"language": "ru-RU", "carrier_id": "00110111"},
     "tr": {"language": "tr-TR", "carrier_id": "01010001"},
@@ -62,7 +90,7 @@ OTA_REGION_CONFIG = {
     "ph": {"language": "en-PH", "carrier_id": "00111110"},
     "roe": {"language": "en-EU", "carrier_id": "10001101"},
     "la": {"language": "en-LA", "carrier_id": "10011010"},
-    "br": {"language": "en-BR", "carrier_id": "10011110"}
+    "br": {"language": "en-BR", "carrier_id": "10011110"},
 }
 
 # --- SOTA Configuration ---
@@ -79,7 +107,7 @@ coZfZud1+fPsELviB9u447C6bKnTU4AaMcR9Y2/uI6TJUTcgyCp+ilgU0JxemrSI
 PFk3jbCbzamQ6Shkw/jDRzYoXpBRg/2QDkbq+j3ljInu0RHDfOeXf3VBfHSnQ66H
 CwIDAQAB
 -----END RSA PUBLIC KEY-----""",
-    "default_negotiation_version": "1615879139745"
+    "default_negotiation_version": "1615879139745",
 }
 
 # --- Downgrade Configuration ---
@@ -95,16 +123,26 @@ ejfUTesQjpfOeCaeKyVSoKQc6WuH7NSYq6B37RMyEn/1+vo8XuHEKD84p29KGpyG
 I7ZeL85iOcwBmOD6+e4yideH2RatA1SzEv/9V8BflaFLAWDuPWUjA2WgfOvy5spY
 mp/MoMOX4P0d+AkJ9Ms6PUXEUBsbOACmaMFyLCLHmd18+UeGdJR/3I15sXKbJhKe
 rwIDAQAB
------END PUBLIC KEY-----"""
+-----END PUBLIC KEY-----""",
 }
 
 # --- IoT Configuration ---
 IOT_CONFIG = {
-    "old_keys": ["oppo1997", "baed2017", "java7865", "231uiedn", "09e32ji6",
-                "0oiu3jdy", "0pej387l", "2dkliuyt", "20odiuye", "87j3id7w"],
+    "old_keys": [
+        "oppo1997",
+        "baed2017",
+        "java7865",
+        "231uiedn",
+        "09e32ji6",
+        "0oiu3jdy",
+        "0pej387l",
+        "2dkliuyt",
+        "20odiuye",
+        "87j3id7w",
+    ],
     "special_server_cn": "https://iota.coloros.com/post/Query_Update",
     "gauss_auto_url": "https://gauss-otacostauto-cn.allawnfs.com/",
-    "gauss_manual_url": "https://gauss-componentotacostmanual-cn.allawnfs.com/"
+    "gauss_manual_url": "https://gauss-componentotacostmanual-cn.allawnfs.com/",
 }
 
 # --- Opex Configuration ---
@@ -123,13 +161,13 @@ qwIDAQAB
         "endpoint": "/queryUpdate",
         "public_key_version": "1631001537253",
         "language": "zh-CN",
-        "carrier_id": "10010111"
-    }
+        "carrier_id": "10010111",
+    },
 }
 
 # --- Realme EDL Configuration ---
 REALME_CONFIG = {
     "gdpr": {"server": "rms01.realme.net", "bucket": "GDPR"},
     "domestic": {"server": "rms11.realme.net", "bucket": "domestic"},
-    "export": {"server": "rms01.realme.net", "bucket": "export"}
+    "export": {"server": "rms01.realme.net", "bucket": "export"},
 }
