@@ -1,4 +1,9 @@
-# Designed by Jerry Tse
+#!/usr/bin/env python3
+"""
+Resolves dynamic download links (ColorOS 16+)
+Designed by Jerry Tse
+"""
+
 import requests
 import sys
 import json

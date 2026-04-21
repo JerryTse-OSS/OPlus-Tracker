@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-# Designed by Jerry Tse
+"""
+Query official EDL packages for Realme
+Designed by Jerry Tse
+"""
+
 import sys
 import re
 import argparse
