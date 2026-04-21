@@ -79,6 +79,7 @@ class QueryConfig:
     custom_language: Optional[str] = None
     nvid: Optional[str] = None
     graynew: str = "0"
+    recruitID: Optional[str] = None
 
 def generate_imei():
     return ''.join(map(str, [random.randint(0, 9) for _ in range(15)]))
@@ -270,6 +271,8 @@ def query_update(config: QueryConfig) -> QueryResult:
     }
     if config.components_input:
         request_body["components"] = parse_components(config.components_input)
+    if config.recruitID:
+        request_body["recruitId"] = config.recruitID
     cipher_text = aes_ctr_encrypt(json.dumps(request_body).encode(), aes_key, iv)
     endpoint_ver = "/update/v6" if (config.pre == "1") or (config.guid and config.guid != "0"*64) else "/update/v3"
     url = f"https://{region_config['host']}{endpoint_ver}"
@@ -544,6 +547,7 @@ def parse_args():
     group_ota.add_argument("--nvid", type=str, help="Custom NV Carrier ID (8 digits)")
     # New argument for graynew mode
     parser.add_argument("--graynew", type=int, choices=[0, 1], default=0,help="Query FWs not in taste mode but in gray server")
+    parser.add_argument("--recruit", help="recruitID for beta ROM")
     
     args = parser.parse_args()
     
@@ -568,7 +572,7 @@ def main():
             gray=args.gray, mode=args.mode, guid=args.guid, components_input=args.components,
             anti=args.anti, has_custom_model=bool(args.model), genshin=args.genshin, pre=args.pre,
             custom_language=args.custom_language,
-            nvid=args.nvid, graynew=args.graynew
+            nvid=args.nvid, graynew=args.graynew, recruitID=args.recruit
         )
 
         ota_upper = args.ota_prefix.upper().replace("OVT", "Ovt")
