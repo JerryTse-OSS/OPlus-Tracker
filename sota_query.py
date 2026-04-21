@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 SOTA(Software OTA) Query
 Designed by Jerry Tse
@@ -293,7 +293,9 @@ def execute_update_request(
         )
 
         if response.status_code != 200:
-            raise RuntimeError(f"[!] Update request failed with HTTP {response.status_code}")
+            raise RuntimeError(
+                f"[!] Update request failed with HTTP {response.status_code}"
+            )
 
         resp_json = response.json()
 
@@ -403,7 +405,11 @@ def run_sota_query(brand: str, ota_version: str, coloros: str):
     query_result, aes_key, iv = execute_query_request(config)
     update_result = execute_update_request(query_result, config)
     sota_version, formatted_lines = extract_and_format_apk_info(update_result)
-    return {"config": config, "sota_version": sota_version, "formatted_lines": formatted_lines}
+    return {
+        "config": config,
+        "sota_version": sota_version,
+        "formatted_lines": formatted_lines,
+    }
 
 
 def parse_args():
@@ -413,7 +419,7 @@ def parse_args():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Usage Example:
-  python3 %(prog)s --brand OnePlus \\
+  python %(prog)s --brand OnePlus \\
                    --ota-version PJX110_11.F.13_2130_202512181912 \\
                    --coloros ColorOS16.0.0 \\"
         """,

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Resolves dynamic download links (ColorOS 16+)
 Designed by Jerry Tse
@@ -143,7 +143,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Example:
-  python3 %(prog)s <URL> [market_name]
+  python %(prog)s <URL> [market_name]
 """,
     )
     parser.add_argument("url", help="URL to resolve")

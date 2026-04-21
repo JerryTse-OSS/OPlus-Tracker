@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 ColorOS Downgrade Query Tool
 Designed by Jerry Tse
@@ -127,20 +127,36 @@ def query_downgrade(ota_prefix: str, prj_num: str):
                 if final_data and "data" in final_data and final_data["data"]:
                     pkg_list = final_data["data"].get("downgradeVoList")
                     if pkg_list:
-                        return {"ota_version": ota_version, "packages": pkg_list, "error": None}
+                        return {
+                            "ota_version": ota_version,
+                            "packages": pkg_list,
+                            "error": None,
+                        }
                 if idx == 0:
                     time.sleep(1)
                     continue
-                return {"ota_version": ota_version, "packages": [], "error": "No Downgrade Package"}
+                return {
+                    "ota_version": ota_version,
+                    "packages": [],
+                    "error": "No Downgrade Package",
+                }
             if idx == 0:
                 time.sleep(1)
                 continue
-            return {"ota_version": ota_version, "packages": [], "error": f"[!] Server returned HTTP {resp.status_code}"}
+            return {
+                "ota_version": ota_version,
+                "packages": [],
+                "error": f"[!] Server returned HTTP {resp.status_code}",
+            }
         except Exception as e:
             if idx == 0:
                 time.sleep(1.2)
                 continue
-            return {"ota_version": ota_version, "packages": [], "error": f"[!] Network Error: {e}"}
+            return {
+                "ota_version": ota_version,
+                "packages": [],
+                "error": f"[!] Network Error: {e}",
+            }
     return {"ota_version": ota_version, "packages": [], "error": "No Downgrade Package"}
 
 
@@ -150,7 +166,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Example:
-  python3 %(prog)s PKX110_11.C 24821
+  python %(prog)s PKX110_11.C 24821
 """,
     )
     parser.add_argument(

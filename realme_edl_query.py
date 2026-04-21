@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Query official EDL packages for Realme
 Designed by Jerry Tse
@@ -63,7 +63,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Example:
-  python3 %(prog)s "RMX3888_16.0.3.500(CN01)" CN 202601241320
+  python %(prog)s "RMX3888_16.0.3.500(CN01)" CN 202601241320
 """,
     )
     parser.add_argument(

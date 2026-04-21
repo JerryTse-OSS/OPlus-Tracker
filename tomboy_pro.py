@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 OTA Query Tool - Query OTA update information for OPPO/OnePlus/Realme devices
 Designed by: Jerry Tse

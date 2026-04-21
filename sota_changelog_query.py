@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 SOTA(Software OTA) Changelog Query
 Designed by Jerry Tse
@@ -258,7 +258,9 @@ def execute_update_request(
             API_URL_UPDATE, headers=headers, json=wrapped_data, timeout=30
         )
         if response.status_code != 200:
-            raise RuntimeError(f"[!] Update request failed with HTTP {response.status_code}")
+            raise RuntimeError(
+                f"[!] Update request failed with HTTP {response.status_code}"
+            )
         resp_json = response.json()
         if "body" not in resp_json:
             raise RuntimeError("[!] Nothing in update response")
@@ -499,7 +501,7 @@ def parse_args():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Usage Example:
-  python3 %(prog)s --brand OnePlus \\
+  python %(prog)s --brand OnePlus \\
                    --ota-version PJX110_11.F.13_2130_202512181912 \\
                    --coloros ColorOS16.0.0 \\"
         """,

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 ColorOS Downgrade Query Tool
 Designed by Jerry Tse
@@ -69,7 +69,9 @@ def decrypt_aes_gcm(cipher_b64: str, iv_b64: str, key: bytes) -> Optional[bytes]
         return None
 
 
-def query_downgrade(ota_prefix: str, prj_num: str, sn_num: str, duid: str, debug: int = 0):
+def query_downgrade(
+    ota_prefix: str, prj_num: str, sn_num: str, duid: str, debug: int = 0
+):
     ota_version = ota_prefix.upper()
     if "_11." not in ota_version:
         raise ValueError(
@@ -117,7 +119,11 @@ def query_downgrade(ota_prefix: str, prj_num: str, sn_num: str, duid: str, debug
             if resp.status_code == 200:
                 resp_json = resp.json()
                 if isinstance(resp_json, dict) and resp_json.get("code") == 1004:
-                    return {"ota_version": ota_version, "packages": [], "error": "DUID query GUID is empty"}
+                    return {
+                        "ota_version": ota_version,
+                        "packages": [],
+                        "error": "DUID query GUID is empty",
+                    }
                 final_data = None
                 if "cipher" in resp_json:
                     decrypted_bytes = decrypt_aes_gcm(
@@ -143,16 +149,28 @@ def query_downgrade(ota_prefix: str, prj_num: str, sn_num: str, duid: str, debug
                 if idx == 0:
                     time.sleep(1)
                     continue
-                return {"ota_version": ota_version, "packages": [], "error": "No Downgrade Package"}
+                return {
+                    "ota_version": ota_version,
+                    "packages": [],
+                    "error": "No Downgrade Package",
+                }
             if idx == 0:
                 time.sleep(1)
                 continue
-            return {"ota_version": ota_version, "packages": [], "error": f"[!] Server returned HTTP {resp.status_code}"}
+            return {
+                "ota_version": ota_version,
+                "packages": [],
+                "error": f"[!] Server returned HTTP {resp.status_code}",
+            }
         except Exception as e:
             if idx == 0:
                 time.sleep(1.5)
                 continue
-            return {"ota_version": ota_version, "packages": [], "error": f"[!] Error: {e}"}
+            return {
+                "ota_version": ota_version,
+                "packages": [],
+                "error": f"[!] Error: {e}",
+            }
     return {"ota_version": ota_version, "packages": [], "error": "No Downgrade Package"}
 
 
@@ -162,8 +180,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 %(prog)s PKX110_11.C 24821 a1b2c3d4 498A44DF1BEC4EB19FBCB3A870FCACB4EC7D424979CC9C517FE7B805A1937746
-  python3 %(prog)s PKX110_11.C 24821 a1b2c3d4 498A44DF1BEC4EB19FBCB3A870FCACB4EC7D424979CC9C517FE7B805A1937746 --debug 1
+  python %(prog)s PKX110_11.C 24821 a1b2c3d4 498A44DF1BEC4EB19FBCB3A870FCACB4EC7D424979CC9C517FE7B805A1937746
+  python %(prog)s PKX110_11.C 24821 a1b2c3d4 498A44DF1BEC4EB19FBCB3A870FCACB4EC7D424979CC9C517FE7B805A1937746 --debug 1
 """,
     )
     parser.add_argument(

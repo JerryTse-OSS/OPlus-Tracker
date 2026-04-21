@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 Opex Query Tool
 Designed by Jerry Tse
@@ -285,7 +285,7 @@ def run_opex_query(ota_version: str, info: str) -> Dict:
 
 def main():
     example_text = """Example:
-  python3 opex_query.py PJZ110_11.C.84_1840_202601060309 --info 16,oneplus"""
+  python %(prog)s PJZ110_11.C.84_1840_202601060309 --info 16,oneplus"""
 
     parser = argparse.ArgumentParser(
         description="Opex Query Tool - Fetch Opex/Carrier updates for ColorOS devices",

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 ColorOS Update Log Query Tool
 Designed by Jerry Tse
@@ -141,9 +141,7 @@ def query_changelog(version_prefix: str, region: str, pre_flag: int = None):
         )
     if region not in VALID_REGIONS:
         available = ", ".join(sorted(VALID_REGIONS))
-        raise ValueError(
-            f"Invalid region '{region}'. Available regions: {available}"
-        )
+        raise ValueError(f"Invalid region '{region}'. Available regions: {available}")
 
     model, adjusted_prefix = process_version_prefix(version_prefix, pre_flag)
 
@@ -177,7 +175,11 @@ def query_changelog(version_prefix: str, region: str, pre_flag: int = None):
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=15)
     except Exception as e:
-        return {"ok": False, "full_version": full_version, "error": f"Network error: {e}"}
+        return {
+            "ok": False,
+            "full_version": full_version,
+            "error": f"Network error: {e}",
+        }
 
     if response.status_code != 200:
         return {
@@ -189,10 +191,19 @@ def query_changelog(version_prefix: str, region: str, pre_flag: int = None):
     try:
         resp_json = response.json()
     except json.JSONDecodeError:
-        return {"ok": False, "full_version": full_version, "error": "Response is not valid JSON."}
+        return {
+            "ok": False,
+            "full_version": full_version,
+            "error": "Response is not valid JSON.",
+        }
 
     if resp_json.get("responseCode") == 500 and resp_json.get("errMsg") == "no modify":
-        return {"ok": True, "full_version": full_version, "no_changelog": True, "lines": []}
+        return {
+            "ok": True,
+            "full_version": full_version,
+            "no_changelog": True,
+            "lines": [],
+        }
 
     if resp_json.get("responseCode") != 200:
         return {
@@ -203,7 +214,11 @@ def query_changelog(version_prefix: str, region: str, pre_flag: int = None):
 
     body_str = resp_json.get("body")
     if not body_str:
-        return {"ok": False, "full_version": full_version, "error": "No 'body' field in response."}
+        return {
+            "ok": False,
+            "full_version": full_version,
+            "error": "No 'body' field in response.",
+        }
 
     try:
         inner_data = json.loads(body_str)
@@ -213,7 +228,11 @@ def query_changelog(version_prefix: str, region: str, pre_flag: int = None):
             "full_version": full_version,
             "error": "'body' content is not valid JSON.",
         }
-    return {"ok": True, "full_version": full_version, "lines": format_output(inner_data, region)}
+    return {
+        "ok": True,
+        "full_version": full_version,
+        "lines": format_output(inner_data, region),
+    }
 
 
 def main():
@@ -222,7 +241,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Example:
-  python3 %(prog)s PHN110_11.H.19_3190
+  python %(prog)s PHN110_11.H.19_3190
 """,
     )
     parser.add_argument(

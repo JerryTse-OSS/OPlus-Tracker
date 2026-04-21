@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 IoT Query Tool - Specialized for ColorOS iota server
 Designed by Jerry Tse
@@ -170,10 +170,16 @@ def query_iot(ota_prefix: str, model_override: str = None):
             result = query_iot_server(full_version, model)
             if result:
                 results.append(
-                    {"query": current_prefix, "found": True, "result": build_iot_result(result)}
+                    {
+                        "query": current_prefix,
+                        "found": True,
+                        "result": build_iot_result(result),
+                    }
                 )
             else:
-                results.append({"query": current_prefix, "found": False, "result": None})
+                results.append(
+                    {"query": current_prefix, "found": False, "result": None}
+                )
 
     else:
         parts = ota_input.split("_")
