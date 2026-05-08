@@ -18,20 +18,10 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from config import SOTA_CONFIG
+from config import OTA_PUBLIC_KEYS, OTA_REGION_CONFIG, SOTA_CONFIG
 
-# --- Configuration ---
-
-API_URL_QUERY = SOTA_CONFIG["api_url_query"]
-API_URL_UPDATE = SOTA_CONFIG["api_url_update"]
-API_URL_DESCRIPTION = SOTA_CONFIG["api_url_description"]
-
-PUBLIC_KEY_CN = SOTA_CONFIG["public_key_cn"]
-
-DEFAULT_NEGOTIATION_VERSION = SOTA_CONFIG["default_negotiation_version"]
 
 # --- Crypto Helpers ---
-
 
 def generate_random_bytes(length: int) -> bytes:
     return os.urandom(length)
@@ -67,6 +57,19 @@ def generate_protected_key(aes_key: bytes, public_key_pem: str) -> str:
 
 # --- Common Functions ---
 
+def get_public_key_for_region(region: str) -> Tuple[str, Dict]:
+    """Get the public key and region config, explicitly excluding cn_gray and cn_cmcc."""
+    key_region = "sg" if region not in ["cn", "eu", "in"] else region
+    public_key = OTA_PUBLIC_KEYS[key_region]
+
+    if region in ["cn", "eu", "in"]:
+        config = OTA_REGION_CONFIG[region]
+    else:
+        config = OTA_REGION_CONFIG["sg_host"].copy()
+        config.update(OTA_REGION_CONFIG[region])
+
+    return public_key, config
+
 
 def parse_brand(brand_str: str) -> str:
     brand_lower = brand_str.strip().lower()
@@ -86,6 +89,7 @@ def build_headers(
     aes_key: bytes,
     public_key: str,
     config: Dict[str, str],
+    region_config: Dict[str, str],
     is_update_request: bool = False,
 ) -> Dict[str, str]:
     protected_key_payload = generate_protected_key(aes_key, public_key)
@@ -95,23 +99,23 @@ def build_headers(
             "SCENE_1": {
                 "protectedKey": protected_key_payload,
                 "version": timestamp,
-                "negotiationVersion": DEFAULT_NEGOTIATION_VERSION,
+                "negotiationVersion": region_config["public_key_version"],
             }
         }
     )
 
     headers = {
-        "language": "zh-CN",
+        "language": region_config["language"],
         "colorOSVersion": config["coloros"],
         "androidVersion": "unknown",
         "infVersion": "1",
         "otaVersion": config["ota_version"],
         "model": config["model"],
         "mode": "taste",
-        "nvCarrier": "10010111",
+        "nvCarrier": region_config["carrier_id"],
         "brand": config["brand"],
         "brandSota": config["brand"],
-        "osType": "domestic_" + config["brand"],
+        "osType": "domestic_" + config["brand"] if config["region"] == "cn" else config["brand"],
         "version": "2",
         "deviceId": "0" * 64,
         "protectedKey": protected_key_json,
@@ -129,10 +133,13 @@ def build_headers(
 
 def execute_query_request(
     config: Dict[str, str],
+    region_config: Dict[str, str],
+    public_key: str,
+    url_query: str
 ) -> Tuple[Optional[Dict[str, Any]], Optional[bytes], Optional[bytes]]:
     aes_key = generate_random_bytes(32)
     iv = generate_random_bytes(16)
-    headers = build_headers(aes_key, PUBLIC_KEY_CN, config, is_update_request=False)
+    headers = build_headers(aes_key, public_key, config, region_config, is_update_request=False)
 
     current_time = int(time.time() * 1000)
     ota_update_time = current_time - (15 * 24 * 60 * 60 * 1000)
@@ -173,7 +180,7 @@ def execute_query_request(
 
     try:
         response = requests.post(
-            API_URL_QUERY, headers=headers, json=wrapped_data, timeout=30
+            url_query, headers=headers, json=wrapped_data, timeout=30
         )
         if response.status_code != 200:
             raise RuntimeError(f"[!] Query failed with HTTP {response.status_code}")
@@ -193,7 +200,11 @@ def execute_query_request(
 
 
 def execute_update_request(
-    query_result: Dict[str, Any], config: Dict[str, str]
+    query_result: Dict[str, Any],
+    config: Dict[str, str],
+    region_config: Dict[str, str],
+    public_key: str,
+    url_update: str
 ) -> Optional[Dict[str, Any]]:
     if "sota" not in query_result:
         raise RuntimeError("[!] No SOTA data found in query results")
@@ -239,7 +250,7 @@ def execute_update_request(
     update_aes_key = generate_random_bytes(32)
     update_iv = generate_random_bytes(16)
     headers = build_headers(
-        update_aes_key, PUBLIC_KEY_CN, config, is_update_request=True
+        update_aes_key, public_key, config, region_config, is_update_request=True
     )
 
     payload_str = json.dumps(body)
@@ -255,7 +266,7 @@ def execute_update_request(
 
     try:
         response = requests.post(
-            API_URL_UPDATE, headers=headers, json=wrapped_data, timeout=30
+            url_update, headers=headers, json=wrapped_data, timeout=30
         )
         if response.status_code != 200:
             raise RuntimeError(
@@ -280,7 +291,11 @@ def execute_update_request(
 
 
 def fetch_sota_description(
-    modules: List[Dict], sota_version: str, config: Dict[str, str]
+    modules: List[Dict],
+    sota_version: str,
+    config: Dict[str, str],
+    region_config: Dict[str, str],
+    url_description: str
 ) -> Optional[Dict]:
     sota_list = []
     for mod in modules:
@@ -305,13 +320,13 @@ def fetch_sota_description(
     params_str = json.dumps(inner_params, separators=(",", ":"), ensure_ascii=False)
 
     headers = {
-        "language": "zh-CN",
+        "language": region_config["language"],
         "brandSota": config["brand"].lower(),
         "sec-ch-ua-platform": "Android",
         "colorOSVersion": config["coloros"],
-        "osType": "domestic_" + config["brand"],
+        "osType": "domestic_" + config["brand"] if config["region"] == "cn" else config["brand"],
         "romVersion": sota_version,
-        "nvCarrier": "10010111",
+        "nvCarrier": region_config["carrier_id"],
         "mode": "manual",
         "osVersion": config["coloros"],
         "otaVersion": config["ota_version"],
@@ -326,7 +341,7 @@ def fetch_sota_description(
     payload = {"params": params_str}
     try:
         response = requests.post(
-            API_URL_DESCRIPTION, headers=headers, json=payload, timeout=30
+            url_description, headers=headers, json=payload, timeout=30
         )
         response.raise_for_status()
         return response.json()
@@ -355,88 +370,6 @@ def extract_apk_modules(update_result: Dict[str, Any]) -> Tuple[str, List[Dict]]
         if sota_version == "Unknown" and "sotaVersion" in apk:
             sota_version = apk["sotaVersion"]
     return sota_version, modules_list
-
-
-def print_changelog(sota_version: str, description_response: Dict):
-    if not description_response:
-        print("Not found sota changelog")
-        return
-
-    body_str = description_response.get("body")
-    if body_str:
-        try:
-            data = json.loads(body_str)
-        except Exception:
-            data = description_response
-    else:
-        data = description_response
-
-    module_map = data.get("moduleMap", {})
-    apk_modules = module_map.get("apk", [])
-    if not apk_modules:
-        print("Not found apk changelog")
-        return
-
-    print(f"Get SOTA Changelog from {sota_version}\n")
-
-    for module in apk_modules:
-        desc_str = module.get("description", "{}")
-        try:
-            desc = json.loads(desc_str)
-        except:
-            continue
-
-        title = desc.get("title")
-        content_list = desc.get("content", [])
-        if not content_list:
-            continue
-
-        print(title)
-        for item in content_list:
-            data_text = item.get("data", "")
-            if data_text:
-                print(data_text)
-        print()
-
-    default_desc = data.get("defaultDescription")
-    if default_desc:
-        desc_str = default_desc.get("description", "{}")
-        try:
-            desc = json.loads(desc_str)
-            title = desc.get("title")
-            content_list = desc.get("content", [])
-            if content_list:
-                print(title)
-                for item in content_list:
-                    data_text = item.get("data", "")
-                    if data_text:
-                        print(data_text)
-                print()
-        except:
-            pass
-
-
-def run_sota_changelog_query(brand: str, ota_version: str, coloros: str):
-    brand = parse_brand(brand)
-    config = {
-        "brand": brand,
-        "ota_version": ota_version,
-        "model": ota_version.split("_")[0],
-        "coloros": coloros,
-        "rom_version": "unknown",
-    }
-    query_result, _, _ = execute_query_request(config)
-    update_result = execute_update_request(query_result, config)
-    sota_version, modules_list = extract_apk_modules(update_result)
-    if not modules_list:
-        return {
-            "config": config,
-            "sota_version": sota_version,
-            "output_lines": ["No available SOTA Update"],
-        }
-    description_response = fetch_sota_description(modules_list, sota_version, config)
-    lines = build_changelog_lines(sota_version, description_response)
-    return {"config": config, "sota_version": sota_version, "output_lines": lines}
 
 
 def build_changelog_lines(sota_version: str, description_response: Dict) -> List[str]:
@@ -495,35 +428,83 @@ def build_changelog_lines(sota_version: str, description_response: Dict) -> List
     return lines
 
 
+def run_sota_changelog_query(ota_version: str, region: str, brand: str, coloros: str):
+    brand = parse_brand(brand)
+    region = region.lower()
+    
+    config = {
+        "brand": brand,
+        "ota_version": ota_version,
+        "model": ota_version.split("_")[0],
+        "coloros": coloros,
+        "rom_version": "unknown",
+        "region": region
+    }
+    
+    public_key, region_config = get_public_key_for_region(region)
+    host = region_config["host"]
+    url_query = f"https://{host}{SOTA_CONFIG['endpoint_query']}"
+    url_update = f"https://{host}{SOTA_CONFIG['endpoint_update']}"
+    url_description = f"https://{host}{SOTA_CONFIG['endpoint_description']}"
+
+    query_result, _, _ = execute_query_request(config, region_config, public_key, url_query)
+    update_result = execute_update_request(query_result, config, region_config, public_key, url_update)
+    sota_version, modules_list = extract_apk_modules(update_result)
+    
+    if not modules_list:
+        return {
+            "config": config,
+            "sota_version": sota_version,
+            "output_lines": ["No available SOTA Update"],
+        }
+        
+    description_response = fetch_sota_description(modules_list, sota_version, config, region_config, url_description)
+    lines = build_changelog_lines(sota_version, description_response)
+    
+    return {"config": config, "sota_version": sota_version, "output_lines": lines}
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="SOTA APK Query Tool - Changelog only",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Usage Example:
-  python %(prog)s --brand OnePlus \\
-                   --ota-version PJX110_11.F.13_2130_202512181912 \\
-                   --coloros ColorOS16.0.0 \\"
+  python %(prog)s PJX110_11.F.13_2130_202512181912 cn --brand OnePlus --coloros ColorOS16.0.0
         """,
     )
+    
+    # Positional arguments (Required)
     parser.add_argument(
-        "--brand", required=True, help="Device brand (e.g., OnePlus, OPPO)"
-    )
-    parser.add_argument(
-        "--ota-version",
-        required=True,
+        "ota_version",
         help="OTA version (e.g., PJX110_11.F.13_2130_202512181912)",
+    )
+    
+    # Filter out cn_gray and cn_cmcc and sg_host
+    valid_regions = [r for r in OTA_REGION_CONFIG.keys() if r not in ["sg_host", "cn_gray", "cn_cmcc"]]
+    parser.add_argument(
+        "region", 
+        type=str.lower, 
+        choices=valid_regions, 
+        help="Region code (e.g., cn, eu, in, gl, etc.)"
+    )
+
+    # Keyword arguments (Required)
+    parser.add_argument(
+        "--brand", required=True, help="Device brand (e.g., OnePlus, OPPO, Realme)"
     )
     parser.add_argument(
         "--coloros", required=True, help="ColorOS version (e.g., ColorOS16.0.0)"
     )
+    
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     try:
         args = parse_args()
-        result = run_sota_changelog_query(args.brand, args.ota_version, args.coloros)
+        print(f"Querying SOTA Changelog for {args.region.upper()} region...")
+        result = run_sota_changelog_query(args.ota_version, args.region, args.brand, args.coloros)
         print(f"Device: {result['config']['model']}")
         print(f"OS: {result['config']['coloros'].replace('ColorOS', 'ColorOS ')}")
         print()

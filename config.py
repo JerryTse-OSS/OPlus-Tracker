@@ -95,19 +95,9 @@ OTA_REGION_CONFIG = {
 
 # --- SOTA Configuration ---
 SOTA_CONFIG = {
-    "api_url_query": "https://component-ota-cn.allawntech.com/update/v6",
-    "api_url_update": "https://component-ota-cn.allawntech.com/sotaUpdate/v1",
-    "api_url_description": "https://component-ota-cn.allawntech.com/sotaDescriptionInfo/v2",
-    "public_key_cn": """-----BEGIN RSA PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApXYGXQpNL7gmMzzvajHa
-oZIHQQvBc2cOEhJc7/tsaO4sT0unoQnwQKfNQCuv7qC1Nu32eCLuewe9LSYhDXr9
-KSBWjOcCFXVXteLO9WCaAh5hwnUoP/5/Wz0jJwBA+yqs3AaGLA9wJ0+B2lB1vLE4
-FZNE7exUfwUc03fJxHG9nCLKjIZlrnAAHjRCd8mpnADwfkCEIPIGhnwq7pdkbamZ
-coZfZud1+fPsELviB9u447C6bKnTU4AaMcR9Y2/uI6TJUTcgyCp+ilgU0JxemrSI
-PFk3jbCbzamQ6Shkw/jDRzYoXpBRg/2QDkbq+j3ljInu0RHDfOeXf3VBfHSnQ66H
-CwIDAQAB
------END RSA PUBLIC KEY-----""",
-    "default_negotiation_version": "1615879139745",
+    "endpoint_query": "/update/v6",
+    "endpoint_update": "/sotaUpdate/v1",
+    "endpoint_description": "/sotaDescriptionInfo/v2",
 }
 
 # --- Downgrade Configuration ---

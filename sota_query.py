@@ -18,21 +18,10 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from config import SOTA_CONFIG
+from config import OTA_PUBLIC_KEYS, OTA_REGION_CONFIG, SOTA_CONFIG
 
-# --- Configuration ---
-
-# API URLs
-API_URL_QUERY = SOTA_CONFIG["api_url_query"]
-API_URL_UPDATE = SOTA_CONFIG["api_url_update"]
-
-# CN Region Public Key
-PUBLIC_KEY_CN = SOTA_CONFIG["public_key_cn"]
-
-DEFAULT_NEGOTIATION_VERSION = SOTA_CONFIG["default_negotiation_version"]
 
 # --- Crypto Helpers ---
-
 
 def generate_random_bytes(length: int) -> bytes:
     return os.urandom(length)
@@ -68,6 +57,19 @@ def generate_protected_key(aes_key: bytes, public_key_pem: str) -> str:
 
 # --- Common Functions ---
 
+def get_public_key_for_region(region: str) -> Tuple[str, Dict]:
+    key_region = "sg" if region not in ["cn", "eu", "in"] else region
+
+    public_key = OTA_PUBLIC_KEYS[key_region]
+
+    if region in ["cn", "eu", "in"]:
+        config = OTA_REGION_CONFIG[region]
+    else:
+        config = OTA_REGION_CONFIG["sg_host"].copy()
+        config.update(OTA_REGION_CONFIG[region])
+
+    return public_key, config
+
 
 def parse_brand(brand_str: str) -> str:
     brand_lower = brand_str.strip().lower()
@@ -87,6 +89,7 @@ def build_headers(
     aes_key: bytes,
     public_key: str,
     config: Dict[str, str],
+    region_config: Dict[str, str],
     is_update_request: bool = False,
 ) -> Dict[str, str]:
     """Build headers for both query and update requests"""
@@ -98,24 +101,24 @@ def build_headers(
             "SCENE_1": {
                 "protectedKey": protected_key_payload,
                 "version": timestamp,
-                "negotiationVersion": DEFAULT_NEGOTIATION_VERSION,
+                "negotiationVersion": region_config["public_key_version"],
             }
         }
     )
 
-    # Base headers
+    # Base headers dynamically injected from region config
     headers = {
-        "language": "zh-CN",
+        "language": region_config["language"],
         "colorOSVersion": config["coloros"],
         "androidVersion": "unknown",
         "infVersion": "1",
         "otaVersion": config["ota_version"],
         "model": config["model"],
         "mode": "taste",
-        "nvCarrier": "10010111",
+        "nvCarrier": region_config["carrier_id"],
         "brand": config["brand"],
         "brandSota": config["brand"],
-        "osType": "domestic_" + config["brand"],
+        "osType": "domestic_" + config["brand"] if config["region"] == "cn" else config["brand"],
         "version": "2",
         "deviceId": "0" * 64,
         "protectedKey": protected_key_json,
@@ -135,13 +138,16 @@ def build_headers(
 
 def execute_query_request(
     config: Dict[str, str],
+    region_config: Dict[str, str],
+    public_key: str,
+    url_query: str
 ) -> Tuple[Optional[Dict[str, Any]], Optional[bytes], Optional[bytes]]:
     """Execute the query and return decrypted data, aes_key, and iv"""
 
     aes_key = generate_random_bytes(32)
     iv = generate_random_bytes(16)
 
-    headers = build_headers(aes_key, PUBLIC_KEY_CN, config, is_update_request=False)
+    headers = build_headers(aes_key, public_key, config, region_config, is_update_request=False)
 
     # Build query body
     current_time = int(time.time() * 1000)
@@ -185,7 +191,7 @@ def execute_query_request(
 
     try:
         response = requests.post(
-            API_URL_QUERY, headers=headers, json=wrapped_data, timeout=30
+            url_query, headers=headers, json=wrapped_data, timeout=30
         )
 
         if response.status_code != 200:
@@ -212,7 +218,11 @@ def execute_query_request(
 
 
 def execute_update_request(
-    query_result: Dict[str, Any], config: Dict[str, str]
+    query_result: Dict[str, Any],
+    config: Dict[str, str],
+    region_config: Dict[str, str],
+    public_key: str,
+    url_update: str
 ) -> Optional[Dict[str, Any]]:
     """Execute the update using data from query result"""
     if "sota" not in query_result:
@@ -231,15 +241,12 @@ def execute_update_request(
         raise RuntimeError("[!] No APK modules found in query results")
 
     # Generate lower version numbers for update request
-    # In real usage, you would get current versions from device
-    # Here we simulate by reducing version numbers
     sau_modules = []
     for module in apk_modules:
         module_name = module.get("moduleName")
         latest_version = module.get("moduleVersion", 0)
 
         # Create a lower version to trigger update
-        # Strategy: reduce by ~5-10% of the version number
         if isinstance(latest_version, int) and latest_version > 100:
             current_version = max(1, latest_version - (latest_version // 10))
         else:
@@ -271,7 +278,7 @@ def execute_update_request(
     update_iv = generate_random_bytes(16)
 
     headers = build_headers(
-        update_aes_key, PUBLIC_KEY_CN, config, is_update_request=True
+        update_aes_key, public_key, config, region_config, is_update_request=True
     )
 
     # Encrypt and send request
@@ -289,7 +296,7 @@ def execute_update_request(
 
     try:
         response = requests.post(
-            API_URL_UPDATE, headers=headers, json=wrapped_data, timeout=30
+            url_update, headers=headers, json=wrapped_data, timeout=30
         )
 
         if response.status_code != 200:
@@ -322,19 +329,14 @@ def execute_update_request(
 
 # --- Output Formatting ---
 
-
 def extract_and_format_apk_info(update_result: Dict[str, Any]) -> Tuple[str, List[str]]:
-    """Extract APK information from update result and format as requested
-    Returns: (sota_version, formatted_lines)
-    """
+    """Extract APK information from update result and format as requested"""
     formatted_lines = []
     sota_version = "Unknown"
 
-    # Check if moduleMap exists in the result
     if "moduleMap" not in update_result:
         return sota_version, formatted_lines
 
-    # Check for sota version
     if "sota" in update_result and "sotaVersion" in update_result["sota"]:
         sota_version = update_result["sota"]["sotaVersion"]
     elif "components" in update_result and len(update_result["components"]) > 0:
@@ -343,7 +345,6 @@ def extract_and_format_apk_info(update_result: Dict[str, Any]) -> Tuple[str, Lis
                 sota_version = component["sotaVersion"]
                 break
 
-    # Check for apk modules
     apk_modules = update_result["moduleMap"].get("apk", [])
 
     if not apk_modules:
@@ -354,18 +355,14 @@ def extract_and_format_apk_info(update_result: Dict[str, Any]) -> Tuple[str, Lis
             sota_version = apk["sotaVersion"]
             break
 
-    # Format each APK module
     for i, apk in enumerate(apk_modules):
-        # Extract fields
         apk_name = apk.get("moduleName", "Unknown")
         apk_version = apk.get("moduleVersion", "Unknown")
         apk_hash = apk.get("md5", "Unknown")
         apk_link = apk.get("manualUrl", "Unknown")
 
-        # Format the output
         formatted_line = f"• Apk Name: {apk_name}\n• Apk Version: {apk_version}\n• Apk Hash: {apk_hash}\n• Link: {apk_link}"
 
-        # Add separator between items (except for the last one)
         if i < len(apk_modules) - 1:
             formatted_line += "\n"
 
@@ -375,7 +372,6 @@ def extract_and_format_apk_info(update_result: Dict[str, Any]) -> Tuple[str, Lis
 
 
 def print_formatted_output(sota_version: str, formatted_lines: List[str]):
-    """Print the formatted output as requested"""
     if not formatted_lines:
         print("\nNo APK information to display")
         return
@@ -389,50 +385,65 @@ def print_formatted_output(sota_version: str, formatted_lines: List[str]):
 
 # --- Main Execution ---
 
-
-def run_sota_query(brand: str, ota_version: str, coloros: str):
+def run_sota_query(ota_version: str, region: str, brand: str, coloros: str):
     """Main execution: run query, then update, then format output"""
     brand = parse_brand(brand)
+    region = region.lower()
 
-    # Create config dictionary from args
     config = {
         "brand": brand,
         "ota_version": ota_version,
         "model": ota_version.split("_")[0],
         "coloros": coloros,
         "rom_version": "unknown",
+        "region": region
     }
-    query_result, aes_key, iv = execute_query_request(config)
-    update_result = execute_update_request(query_result, config)
+
+    # Retrieve Region Configurations
+    public_key, region_config = get_public_key_for_region(region)
+    host = region_config["host"]
+    url_query = f"https://{host}{SOTA_CONFIG['endpoint_query']}"
+    url_update = f"https://{host}{SOTA_CONFIG['endpoint_update']}"
+
+    query_result, aes_key, iv = execute_query_request(config, region_config, public_key, url_query)
+    update_result = execute_update_request(query_result, config, region_config, public_key, url_update)
     sota_version, formatted_lines = extract_and_format_apk_info(update_result)
+    
     return {
         "config": config,
         "sota_version": sota_version,
         "formatted_lines": formatted_lines,
+        "region_config": region_config
     }
 
 
 def parse_args():
-    """Parse command line arguments with validation and custom error handling"""
     parser = argparse.ArgumentParser(
-        description="SOTA APK Query Tool - All parameters are required",
+        description="SOTA APK Query Tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Usage Example:
-  python %(prog)s --brand OnePlus \\
-                   --ota-version PJX110_11.F.13_2130_202512181912 \\
-                   --coloros ColorOS16.0.0 \\"
+  python %(prog)s PJX110_11.F.13_2130_202512181912 cn --brand OnePlus --coloros ColorOS16.0.0
         """,
     )
 
-    # All parameters are required
+    # Positional Arguments (Required parameters)
     parser.add_argument(
-        "--brand", required=True, help="Device brand (e.g., OnePlus, OPPO)"
-    )
-    parser.add_argument(
-        "--ota-version",
-        required=True,
+        "ota_version",
         help="OTA version (e.g., PJX110_11.F.13_2130_202512181912)",
+    )
+    
+    valid_regions = [r for r in OTA_REGION_CONFIG.keys() if r not in ["sg_host", "cn_gray", "cn_cmcc"]]
+    parser.add_argument(
+        "region", 
+        type=str.lower, 
+        choices=valid_regions, 
+        help="Region code (e.g., cn, eu, in, gl, etc.)"
+    )
+
+    # Named Arguments (Required params for query)
+    parser.add_argument(
+        "--brand", required=True, help="Device brand (e.g., OnePlus, OPPO, Realme)"
     )
     parser.add_argument(
         "--coloros", required=True, help="ColorOS version (e.g., ColorOS16.0.0)"
@@ -444,7 +455,9 @@ Usage Example:
 if __name__ == "__main__":
     try:
         args = parse_args()
-        result = run_sota_query(args.brand, args.ota_version, args.coloros)
+        print(f"Querying SOTA info for {args.region.upper()} region...")
+        result = run_sota_query(args.ota_version, args.region, args.brand, args.coloros)
+        
         print(f"Device: {result['config']['model']}")
         print(f"OS: {result['config']['coloros'].replace('ColorOS', 'ColorOS ')}")
         print()
@@ -456,6 +469,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nUnexpected error: {str(e)}")
         import traceback
-
         traceback.print_exc()
         sys.exit(1)
