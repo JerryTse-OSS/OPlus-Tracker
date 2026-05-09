@@ -17,7 +17,7 @@ Current scripts:
 
 - `C16_transer.py` → resolves dynamic download links (ColorOS 16+)
 - `tomboy_pro.py` → main OTA query tool (full / delta / gray / preview / anti-query bypass)
-- `opex_query.py` → dedicated OPEX query (CN only)
+- `opex_query.py` → dedicated OPEX query
 - `opex_analyzer.py` → analyse what OPEX fixed for
 - `sota_query.py` → SOTA (Software OTA / modular APK) query
 - `sota_changelog_query.py` → SOTA (Software OTA / modular APK) Changelog query
@@ -122,15 +122,15 @@ python tomboy_pro.py RMX3301_11.H sg --nvid 00011011
 
 ## `opex_query.py`
 
-Dedicated tool to query **OPEX** (mainly ColorOS CN variants).
+Dedicated tool to query **OPEX**.
 
 ### Usage
 
 ```bash
-python opex_query.py <FULL_OTA_VERSION> --info <OS_VERSION>,<BRAND>
+python opex_query.py <FULL_OTA_VERSION> <REGION> --info <OS_VERSION>,<BRAND>
 
 # Examples
-python opex_query.py PJZ110_11.C.84_1840_202601060309 --info 16,oneplus
+python opex_query.py PJZ110_11.C.84_1840_202601060309 cn --info 16,oneplus
 python opex_query.py RMX5200_11.A.63_... --info 16,realme
 ```
 
@@ -348,5 +348,5 @@ python desc_query.py PLP110PRE_11.A.40_0400 cn
 
 - ColorOS 16 introduced strong anti-query restrictions (~Oct 2025). Use `--anti 1` + `taste` mode + base version (e.g. `11.A`) in `tomboy_pro.py` to bypass on many models.
 - Dynamic links from `downloadCheck?` usually expire in **10–30 minutes** — use `C16_transer.py` immediately after getting them.
-- `opex_query.py`,  `iot_query.py` and `downgrade_query.py` are **CN-only** at the moment.
+- `iot_query.py` and `downgrade_query.py` are **CN-only** at the moment.
 - All tools regenerate encryption keys / device IDs per request to reduce server-side blocking.

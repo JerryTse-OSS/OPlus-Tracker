@@ -14,7 +14,7 @@ import string
 import sys
 import time
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Tuple
 
 import requests
 from cryptography.hazmat.backends import default_backend
@@ -22,13 +22,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from config import OPEX_CONFIG
-
-# --- Configuration Constants ---
-
-OPEX_PUBLIC_KEY_CN = OPEX_CONFIG["public_key_cn"]
-
-OPEX_CONFIG_CN = OPEX_CONFIG["cn"]
+from config import OPEX_CONFIG, OTA_REGION_CONFIG
 
 
 @dataclass
@@ -41,6 +35,21 @@ class OpexInfo:
 
 
 # --- Helper Functions ---
+
+def get_opex_config_for_region(region: str) -> Tuple[str, Dict, Dict]:
+    """Returns (public_key, opex_host_config, ota_region_config) based on region."""
+    key_region = "sg" if region not in ["cn", "eu", "in"] else region
+    
+    public_key = OPEX_CONFIG["keys"][key_region]
+    opex_host_cfg = OPEX_CONFIG["hosts"][key_region]
+    
+    if region in ["cn", "eu", "in"]:
+        ota_cfg = OTA_REGION_CONFIG[region]
+    else:
+        ota_cfg = OTA_REGION_CONFIG["sg_host"].copy()
+        ota_cfg.update(OTA_REGION_CONFIG[region])
+        
+    return public_key, opex_host_cfg, ota_cfg
 
 
 def generate_random_string(length: int = 64) -> str:
@@ -87,7 +96,6 @@ def extract_model_from_ota_version(ota_version: str) -> str:
 
 # --- Encryption Core Logic ---
 
-
 def generate_protected_key(aes_key: bytes, public_key_pem: str) -> str:
     public_key = serialization.load_pem_public_key(
         public_key_pem.encode(), backend=default_backend()
@@ -118,7 +126,6 @@ def aes_ctr_decrypt(ciphertext: bytes, key: bytes, iv: bytes) -> bytes:
 
 # --- Request Construction & Execution ---
 
-
 def build_headers(
     ota_version: str,
     model: str,
@@ -127,13 +134,14 @@ def build_headers(
     brand: str,
     device_id: str,
     protected_key: str,
+    opex_host_cfg: Dict,
+    ota_cfg: Dict
 ) -> Dict:
-    config = OPEX_CONFIG_CN
     headers = {
-        "language": config["language"],
-        "newLanguage": config["language"],
+        "language": ota_cfg["language"],
+        "newLanguage": ota_cfg["language"],
         "androidVersion": android_version,
-        "nvCarrier": config["carrier_id"],
+        "nvCarrier": ota_cfg["carrier_id"],
         "deviceId": device_id,
         "osVersion": os_version,
         "productName": model,
@@ -149,7 +157,7 @@ def build_headers(
             "opex": {
                 "protectedKey": protected_key,
                 "version": expire_time,
-                "negotiationVersion": config["public_key_version"],
+                "negotiationVersion": opex_host_cfg["public_key_version"],
             }
         }
     )
@@ -157,11 +165,12 @@ def build_headers(
 
 
 def query_opex(
-    ota_version: str, os_version: str, brand: str, android_version: str
+    ota_version: str, region: str, os_version: str, brand: str, android_version: str
 ) -> Dict:
     model = extract_model_from_ota_version(ota_version)
+    public_key, opex_host_cfg, ota_cfg = get_opex_config_for_region(region)
 
-    url = f"https://{OPEX_CONFIG_CN['host']}{OPEX_CONFIG_CN['endpoint']}"
+    url = f"https://{opex_host_cfg['host']}{OPEX_CONFIG['endpoint']}"
     max_retries = 10
 
     for attempt in range(max_retries):
@@ -170,7 +179,7 @@ def query_opex(
             aes_key = generate_random_bytes(32)
             iv = generate_random_bytes(16)
             device_id = generate_random_string(64).lower()
-            protected_key_str = generate_protected_key(aes_key, OPEX_PUBLIC_KEY_CN)
+            protected_key_str = generate_protected_key(aes_key, public_key)
 
             headers = build_headers(
                 ota_version,
@@ -180,6 +189,8 @@ def query_opex(
                 brand,
                 device_id,
                 protected_key_str,
+                opex_host_cfg,
+                ota_cfg
             )
             raw_payload = {
                 "mode": "0",
@@ -270,7 +281,7 @@ def process_result(body: Dict):
     return opex_list
 
 
-def run_opex_query(ota_version: str, info: str) -> Dict:
+def run_opex_query(ota_version: str, region: str, info: str) -> Dict:
     parts = info.split(",")
     if len(parts) != 2:
         raise ValueError("--info must be in format 'osVersion,brand'")
@@ -278,21 +289,32 @@ def run_opex_query(ota_version: str, info: str) -> Dict:
     os_version = parse_os_version(os_ver_raw)
     brand = parse_brand(brand_raw)
     android_version = "Android" + os_ver_raw
-    query_result = query_opex(ota_version, os_version, brand, android_version)
+    query_result = query_opex(ota_version, region.lower(), os_version, brand, android_version)
     query_result.update({"brand": brand, "os_version": os_version})
     return query_result
 
 
 def main():
     example_text = """Example:
-  python %(prog)s PJZ110_11.C.84_1840_202601060309 --info 16,oneplus"""
+  python %(prog)s PJZ110_11.C.84_1840_202601060309 cn --info 16,oneplus"""
 
     parser = argparse.ArgumentParser(
         description="Opex Query Tool - Fetch Opex/Carrier updates for ColorOS devices",
         epilog=example_text,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    
     parser.add_argument("ota_version", help="Full OTA Version String")
+    
+    # Generate choices from config excluding unwanted items
+    valid_regions = [r for r in OTA_REGION_CONFIG.keys() if r not in ["sg_host", "cn_gray", "cn_cmcc"]]
+    parser.add_argument(
+        "region", 
+        type=str.lower, 
+        choices=valid_regions, 
+        help="Region code (e.g., cn, eu, in, gl, etc.)"
+    )
+
     parser.add_argument(
         "--info",
         required=True,
@@ -300,7 +322,6 @@ def main():
         help="System info: osVersion,brand (e.g. 16,oneplus)",
     )
 
-    # Critical change: Print help doc (including Example) and exit if no args provided
     if len(sys.argv) == 1:
         parser.print_help()
         return 1
@@ -315,8 +336,8 @@ def main():
     if args.ota_version.count("_") < 3:
         print("\nWarning: Opex query typically requires a complete OTA version string.")
 
-    result = run_opex_query(args.ota_version, args.info)
-    print("Querying Opex updates")
+    result = run_opex_query(args.ota_version, args.region, args.info)
+    print(f"Querying Opex updates for {args.region.upper()} region")
     print(f"Model: {result['model']}")
     print(f"Brand: {result['brand']}")
     print(f"OS: {result['os_version'].replace('ColorOS', 'ColorOS ')}")
