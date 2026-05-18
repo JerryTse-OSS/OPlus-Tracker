@@ -82,6 +82,7 @@ class QueryConfig:
     nvid: Optional[str] = None
     graynew: str = "0"
     recruitID: int = 0
+    original_link: int = 0
 
 
 def generate_imei():
@@ -449,17 +450,21 @@ def process_response(response: requests.Response, aes_key: bytes) -> QueryResult
         return QueryResult(False, status, error=f"Processing failed: {str(e)}")
 
 
-def display_result(result: QueryResult) -> bool:
+def display_result(result: QueryResult, show_original_link: bool = False) -> bool:
     if result.success:
         print("\nFetch Info:")
         components = result.components
         if components:
             if len(components) == 1:
                 component = components[0]
+                if show_original_link and component.original_link != component.link:
+                    print(f"• Original Link: {component.original_link}")
                 print(f"• Link: {component.link}")
             else:
                 for i, component in enumerate(components, 1):
                     print(f"\nComponent {i}: {component.name}")
+                    if show_original_link and component.original_link != component.link:
+                        print(f"Original Link: {component.original_link}")
                     print(f"Link: {component.link}")
                     print(f"MD5: {component.md5}")
 
@@ -556,7 +561,7 @@ def auto_complete_query(base_ota_prefix: str, config: QueryConfig) -> bool:
             final_cfg.pre = "0"
 
             result_final = query_update(final_cfg)
-            has_success = display_result(result_final) or has_success
+            has_success = display_result(result_final, config.original_link == 1) or has_success
         return has_success
 
     if config.anti == 1:
@@ -635,7 +640,7 @@ def auto_complete_query(base_ota_prefix: str, config: QueryConfig) -> bool:
             if fake != "N/A":
                 last_success_fake = fake
 
-        has_success = display_result(result) or has_success
+        has_success = display_result(result, config.original_link == 1) or has_success
     return has_success
 
 
@@ -674,7 +679,6 @@ def parse_args():
         "--anti", type=int, choices=[0, 1], default=0, help="Anti mode"
     )
     group_ota.add_argument("--nvid", type=str, help="Custom NV Carrier ID (8 digits)")
-    # New argument for graynew mode
     parser.add_argument(
         "--graynew",
         type=int,
@@ -683,6 +687,14 @@ def parse_args():
         help="Query FWs not in taste mode but in gray server",
     )
     parser.add_argument("--recruit", type=int, choices=[0, 1], default=0,help="recruitID for beta ROM")
+    
+    parser.add_argument(
+        "--original_link", 
+        type=int, 
+        choices=[0, 1], 
+        default=0, 
+        help="Output the original link before the resolved dynamic link"
+    )
 
     args = parser.parse_args()
 
@@ -716,6 +728,7 @@ def run_tomboy_query(args) -> bool:
         nvid=args.nvid,
         graynew=args.graynew,
         recruitID=args.recruit,
+        original_link=args.original_link,
     )
 
     ota_upper = args.ota_prefix.upper().replace("OVT", "Ovt")
@@ -753,7 +766,7 @@ def run_tomboy_query(args) -> bool:
         config.model += "IN"
         result = query_update(config)
 
-    return display_result(result)
+    return display_result(result, config.original_link == 1)
 
 
 def main():

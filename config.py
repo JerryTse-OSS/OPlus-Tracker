@@ -95,19 +95,9 @@ OTA_REGION_CONFIG = {
 
 # --- SOTA Configuration ---
 SOTA_CONFIG = {
-    "api_url_query": "https://component-ota-cn.allawntech.com/update/v6",
-    "api_url_update": "https://component-ota-cn.allawntech.com/sotaUpdate/v1",
-    "api_url_description": "https://component-ota-cn.allawntech.com/sotaDescriptionInfo/v2",
-    "public_key_cn": """-----BEGIN RSA PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApXYGXQpNL7gmMzzvajHa
-oZIHQQvBc2cOEhJc7/tsaO4sT0unoQnwQKfNQCuv7qC1Nu32eCLuewe9LSYhDXr9
-KSBWjOcCFXVXteLO9WCaAh5hwnUoP/5/Wz0jJwBA+yqs3AaGLA9wJ0+B2lB1vLE4
-FZNE7exUfwUc03fJxHG9nCLKjIZlrnAAHjRCd8mpnADwfkCEIPIGhnwq7pdkbamZ
-coZfZud1+fPsELviB9u447C6bKnTU4AaMcR9Y2/uI6TJUTcgyCp+ilgU0JxemrSI
-PFk3jbCbzamQ6Shkw/jDRzYoXpBRg/2QDkbq+j3ljInu0RHDfOeXf3VBfHSnQ66H
-CwIDAQAB
------END RSA PUBLIC KEY-----""",
-    "default_negotiation_version": "1615879139745",
+    "endpoint_query": "/update/v6",
+    "endpoint_update": "/sotaUpdate/v1",
+    "endpoint_description": "/sotaDescriptionInfo/v2",
 }
 
 # --- Downgrade Configuration ---
@@ -147,7 +137,9 @@ IOT_CONFIG = {
 
 # --- Opex Configuration ---
 OPEX_CONFIG = {
-    "public_key_cn": """-----BEGIN RSA PUBLIC KEY-----
+    "endpoint": "/queryUpdate",
+    "keys": {
+        "cn": """-----BEGIN RSA PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr/B2JwdaZIQqVpx10R4R
 o/ZjCLzssu3vIZCKNwDh4LMBkeHRjcjtaVPoPvvTKY74XlMg7fmRv0iQELnlFNtH
 jgg8YnmhZObUmpVdpHLhthRSBqpRKl2LhMgYtE/SELUKvzelw2byNcRnU9/PvbsA
@@ -156,12 +148,51 @@ pLNsTEXiTcQT3ZX2LcT6bRN8yUmGuARjLh2VG7H1gSxjUUDsKcFmcJY/8zyB64nq
 vX4Gya86c2bVaEd+CsMsOEYISWdVrG+Rf6y3BaG1DZRQDh0GD1cwtvA+JtvEmqGk
 qwIDAQAB
 -----END RSA PUBLIC KEY-----""",
-    "cn": {
-        "host": "opex-service-cn.allawntech.com",
-        "endpoint": "/queryUpdate",
-        "public_key_version": "1631001537253",
-        "language": "zh-CN",
-        "carrier_id": "10010111",
+        "sg": """-----BEGIN RSA PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmsGhAIeXjkAqPW08T18y
+nlLOBOfDEzNz4MEvDmecfmrGnlxGpucThpLPC+Zwr7H+ZjIPSBReN5a3g+urA8X9
+WXZTeb9nC5aAjd3jAV/2iWSaN9D4t20jMg58E01xgEQGPwEMnAkQ/2AR74GQocQV
+Ycz4ouOVfNxeb266hGMKydwubxaV2JtnIzacvUCIpm6tdSqUktbqKlzHCVdPCkJY
+SfcgsmO6f5kgsLAnOJpTEvCkh8m8x7X113hhHdu4FamSAM7NrOQFtYsndhDu7ISD
+13TEZcKJokxjUWwNix02NrZhDVlspnTr6yQ0+lAyVtjoTXJlpVoUtcSYbEvNjxIj
+5QIDAQAB
+-----END RSA PUBLIC KEY-----""",
+        "in": """-----BEGIN RSA PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoryRng0SUK/vtxyAx6E/
+QLcAKXAY3QlA4pZipRYKwH78KQCTM6HCVKxnrudRRu88M8JE2neO/nP1CI6sCR5e
+2AlM2p4ctZ07cE3nGyP7UoE8r9DiHrK/DXkIv+vQ9nPIbAopAYcL4Ke4ecBIH/MB
+bBIzzFHv9Hur/U5mXEVqCO1jHvwglG9y1l2pAdzL+lxocyYx28G8bM//KhAdeTJ8
+77LH9UgL91jL68bJLr6N1R3KYHW56uoM7n/Y1ZlcALnoJI7gdlGEoEhAMf/VSxUo
+BxnDbuqfd8PNhTgyuRqXLYxSPSxbbgojHyJllkqhLcsZhW4D0fnvJMOdi+Ut1NON
+AwIDAQAB
+-----END RSA PUBLIC KEY-----""",
+        "eu": """-----BEGIN RSA PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5j8QHA2FWysJd5NSz7IR
+lYhW3vcAri6AeLK/+X5lnWu9xeFTLd2zkjvasGPJR6kJVMQ5+AXdBCq5oR8umHqK
+RsMDB4doGhECfjauFm7uVmJJRfgL2cg5wPHWuAZfnWshlhuYZ1S1sTu4RIHQD7uQ
+GxrXZzmkY+JlHB5byaekMuSwz3uJ9gwZ9WLP8LXh+MGC1ECJ476rnPehJom3/Mxx
+j+WTilMhDO2Ws61tskkDINdL1Qmj0ziia4hYziyLmDDDcrhDKB/tOpYioByFnDu
+yaEySLunR7bp4XDFcUfptCXwEML12LzUlpifDxdj6ZZeHkpk9ZYs59JfNynXVBbc
+JcQIDAQAB
+-----END RSA PUBLIC KEY-----""",
+    },
+    "hosts": {
+        "cn": {
+            "host": "opex-service-cn.allawntech.com",
+            "public_key_version": "1631001537253",
+        },
+        "sg": {
+            "host": "opex-service-sg.allawnos.com",
+            "public_key_version": "1631001988895",
+        },
+        "in": {
+            "host": "opex-service-in.allawnos.com",
+            "public_key_version": "1631002407524",
+        },
+        "eu": {
+            "host": "opex-service-eu.allawnos.com",
+            "public_key_version": "1631002593566",
+        },
     },
 }
 
@@ -170,4 +201,30 @@ REALME_CONFIG = {
     "gdpr": {"server": "rms01.realme.net", "bucket": "GDPR"},
     "domestic": {"server": "rms11.realme.net", "bucket": "domestic"},
     "export": {"server": "rms01.realme.net", "bucket": "export"},
+}
+
+# --- Earbuds Configuration ---
+EARBUDS_CONFIG = {
+    "endpoints": {
+        "firmware_info": "/v1/earphone/firmwareInfo",
+        "whitelist": "/v1/earphone/new/latestWhiteList"
+    },
+    "regions": {
+        "cn": {
+            "host": "iot-earbuds-cn.allawntech.com",
+            "key": "&*%earphone-OP7u3423**%$"
+        },
+        "eu": {
+            "host": "iot-earbuds-eu.allawnos.com",
+            "key": "&*%earphone-OP6r888s**%$"
+        },
+        "gl": {
+            "host": "iot-earbuds-sg.allawnos.com",
+            "key": "&*%earphone-OP9U3544**%$"
+        },
+        "us": {
+            "host": "iot-earbuds-us.allawnos.com",
+            "key": "&*%earbuds-OP6rus-easts*%$"
+        }
+    }
 }
