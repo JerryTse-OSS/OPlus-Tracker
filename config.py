@@ -131,10 +131,10 @@ IOT_CONFIG = {
         "87j3id7w",
     ],
     "special_servers": {
-        "cn": "https://iota.coloros.com/post/Query_Update",
-        "gl": "https://ifota.realmemobile.com/post/Query_Update",
-        "in": "https://ifota-in.realmemobile.com/post/Query_Update",
-        "eu": "https://ifota-eu.realmemobile.com/post/Query_Update"
+        "cn": "https://iota.coloros.com/post/",
+        "gl": "https://ifota.realmemobile.com/post/",
+        "in": "https://ifota-in.realmemobile.com/post/",
+        "eu": "https://ifota-eu.realmemobile.com/post/"
     },
     "gauss_auto_url": "https://gauss-otacostauto-cn.allawnfs.com/",
     "gauss_manual_url": "https://gauss-componentotacostmanual-cn.allawnfs.com/",

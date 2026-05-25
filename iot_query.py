@@ -118,7 +118,7 @@ def query_iot_server(ota_version: str, model: str, region: str):
     headers, body = build_special_request_data(ota_version, model, region)
     encrypted_body = encrypt_ctr(json.dumps(body))
     
-    server_url = SPECIAL_SERVERS.get(region.lower(), SPECIAL_SERVERS["cn"])
+    server_url = SPECIAL_SERVERS.get(region.lower(), SPECIAL_SERVERS["cn"]) + "Query_Update"
 
     try:
         response = requests.post(
@@ -140,7 +140,6 @@ def query_iot_server(ota_version: str, model: str, region: str):
             return None
 
         decrypted_json = json.loads(decrypt_ctr(encrypted_resp))
-        
         module_data = decrypted_json.get("modules", [{}])[0]
         if module_data.get("checkFailReason") or decrypted_json.get("checkFailReason"):
             return None
