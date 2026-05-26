@@ -70,7 +70,7 @@ def decrypt_aes_gcm(cipher_b64: str, iv_b64: str, key: bytes) -> Optional[bytes]
 
 
 def query_downgrade(
-    ota_prefix: str, prj_num: str, sn_num: str, duid: str, debug: int = 0
+    ota_prefix: str, prj_num: str, sn_num: str, duid: str, debug: int = 0, cmcc: int = 0
 ):
     ota_version = ota_prefix.upper()
     if "_11." not in ota_version:
@@ -84,94 +84,88 @@ def query_downgrade(
 
     model = ota_version.split("_")[0]
     requests.packages.urllib3.disable_warnings()
-    carriers = ["10010111", "10011000"]
-    for idx, current_carrier in enumerate(carriers):
-        session_key = os.urandom(32)
-        iv = os.urandom(12)
-        try:
-            protected_key = get_protected_key(session_key)
-            encrypted_device_id_obj = encrypt_aes_gcm(duid, session_key, iv)
-            payload = {
-                "model": model,
-                "nvCarrier": current_carrier,
-                "prjNum": prj_num,
-                "serialNo": sn_num,
-                "otaVersion": ota_version,
-                "deviceId": encrypted_device_id_obj,
+    if cmcc == 1:
+        carriers = "10011000"
+    else:
+        carriers = "10010111"
+
+    session_key = os.urandom(32)
+    iv = os.urandom(12)
+    try:
+        protected_key = get_protected_key(session_key)
+        encrypted_device_id_obj = encrypt_aes_gcm(duid, session_key, iv)
+        payload = {
+            "model": model,
+            "nvCarrier": carriers,
+            "prjNum": prj_num,
+            "serialNo": sn_num,
+            "otaVersion": ota_version,
+            "deviceId": encrypted_device_id_obj,
+        }
+        cipher_info = {
+            "downgrade-server": {
+                "negotiationVersion": NEGOTIATION_VERSION,
+                "protectedKey": protected_key,
+                "version": str(int(time.time())),
             }
-            cipher_info = {
-                "downgrade-server": {
-                    "negotiationVersion": NEGOTIATION_VERSION,
-                    "protectedKey": protected_key,
-                    "version": str(int(time.time())),
-                }
-            }
-            headers = {
-                "Host": "downgrade.coloros.com",
-                "Content-Type": "application/json; charset=UTF-8",
-                "cipherInfo": json.dumps(cipher_info),
-                "deviceId": duid,
-                "Connection": "close",
-            }
-            resp = requests.post(
-                URL, headers=headers, json=payload, timeout=20, verify=False
-            )
-            if resp.status_code == 200:
-                resp_json = resp.json()
-                if isinstance(resp_json, dict) and resp_json.get("code") == 1004:
-                    return {
-                        "ota_version": ota_version,
-                        "packages": [],
-                        "error": "DUID query GUID is empty",
-                    }
-                final_data = None
-                if "cipher" in resp_json:
-                    decrypted_bytes = decrypt_aes_gcm(
-                        resp_json["cipher"], resp_json["iv"], session_key
-                    )
-                    if decrypted_bytes:
-                        try:
-                            final_data = json.loads(decrypted_bytes)
-                        except Exception:
-                            pass
-                else:
-                    final_data = resp_json
-                if final_data and "data" in final_data and final_data["data"]:
-                    pkg_list = final_data["data"].get("downgradeVoList")
-                    if pkg_list:
-                        return {
-                            "ota_version": ota_version,
-                            "packages": pkg_list,
-                            "meta_data": final_data["data"].get("metaData"),
-                            "debug": debug,
-                            "error": None,
-                        }
-                if idx == 0:
-                    time.sleep(1)
-                    continue
+        }
+        headers = {
+            "Host": "downgrade.coloros.com",
+            "Content-Type": "application/json; charset=UTF-8",
+            "cipherInfo": json.dumps(cipher_info),
+            "deviceId": duid,
+            "Connection": "close",
+        }
+        resp = requests.post(
+            URL, headers=headers, json=payload, timeout=20, verify=False
+        )
+        if resp.status_code == 200:
+            resp_json = resp.json()
+            if isinstance(resp_json, dict) and resp_json.get("code") == 1004:
                 return {
                     "ota_version": ota_version,
                     "packages": [],
-                    "error": "No Downgrade Package",
+                    "error": "DUID query GUID is empty",
                 }
-            if idx == 0:
-                time.sleep(1)
-                continue
+            final_data = None
+            if "cipher" in resp_json:
+                decrypted_bytes = decrypt_aes_gcm(
+                    resp_json["cipher"], resp_json["iv"], session_key
+                )
+                if decrypted_bytes:
+                    try:
+                        final_data = json.loads(decrypted_bytes)
+                    except Exception:
+                        pass
+            else:
+                final_data = resp_json
+            if final_data and "data" in final_data and final_data["data"]:
+                pkg_list = final_data["data"].get("downgradeVoList")
+                if pkg_list:
+                    return {
+                        "ota_version": ota_version,
+                        "packages": pkg_list,
+                        "meta_data": final_data["data"].get("metaData"),
+                        "debug": debug,
+                        "error": None,
+                    }
+            return {
+                "ota_version": ota_version,
+                "packages": [],
+                "error": "No Downgrade Package",
+            }
+        else:
             return {
                 "ota_version": ota_version,
                 "packages": [],
                 "error": f"[!] Server returned HTTP {resp.status_code}",
             }
-        except Exception as e:
-            if idx == 0:
-                time.sleep(1.5)
-                continue
-            return {
-                "ota_version": ota_version,
-                "packages": [],
-                "error": f"[!] Error: {e}",
-            }
-    return {"ota_version": ota_version, "packages": [], "error": "No Downgrade Package"}
+    except Exception as e:
+        return {
+            "ota_version": ota_version,
+            "packages": [],
+            "error": f"[!] Error: {e}",
+        }
 
 
 def main():
@@ -209,11 +203,18 @@ Examples:
         default=0,
         help="Enable (1) or disable (0) debug output (default: 0)",
     )
+    parser.add_argument(
+        "--cmcc",
+        type=int,
+        choices=[0, 1],
+        default=0,
+        help="Enable (1) or disable (0) to use CMCC nvID (default: 0)",
+    )
     args = parser.parse_args()
 
     try:
         result = query_downgrade(
-            args.ota_prefix, args.prj_num, args.sn_num, args.duid, args.debug
+            args.ota_prefix, args.prj_num, args.sn_num, args.duid, args.debug, args.cmcc
         )
     except ValueError as e:
         parser.error(str(e))

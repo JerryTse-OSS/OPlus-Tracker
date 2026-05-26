@@ -21,7 +21,7 @@ Current scripts:
 - `opex_analyzer.py` → analyse what OPEX fixed for
 - `sota_query.py` → SOTA (Software OTA / modular APK) query
 - `sota_changelog_query.py` → SOTA (Software OTA / modular APK) Changelog query
-- `iot_query.py` → legacy & IoT server query (CN only)
+- `iot_query.py` → legacy & IoT server query
 - `downgrade_query.py` → query official downgrade packages (CN only)
 - `realme_edl_query.py` → query official EDL packages for Realme
 - `changelog_query.py` → query specific version changelog
@@ -182,7 +182,7 @@ python sota_changelog_query.py CPH2573_11.F.43_2430_202603192142 in --brand OneP
 
 ## `iot_query.py`
 
-Query tool using the old **iota.coloros.com** special server (CN only).  
+Query tool using the old **iota.coloros.com** special server.  
 Often returns older or special builds no longer available through normal channels.
 
 ### Usage
@@ -348,5 +348,5 @@ python desc_query.py PLP110PRE_11.A.40_0400 cn
 
 - ColorOS 16 introduced strong anti-query restrictions (~Oct 2025). Use `--anti 1` + `taste` mode + base version (e.g. `11.A`) in `tomboy_pro.py` to bypass on many models.
 - Dynamic links from `downloadCheck?` usually expire in **10–30 minutes** — use `C16_transer.py` immediately after getting them.
-- `iot_query.py` and `downgrade_query.py` are **CN-only** at the moment.
+- `downgrade_query.py` are **CN-only** at the moment.
 - All tools regenerate encryption keys / device IDs per request to reduce server-side blocking.

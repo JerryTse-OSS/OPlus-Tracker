@@ -225,7 +225,9 @@ def process_ota_version(
 
     if custom_model:
         model = custom_model
-    elif region.lower() in ["eu", "ru", "tr"]:
+    elif region.lower() in ["eu"]:
+        model = f"{base_model}EEA"
+    elif region.lower() in ["ru", "tr"]:
         model = f"{base_model}{region.upper()}"
     else:
         model = base_model
