@@ -70,7 +70,6 @@ class QueryConfig:
     ota_version: str
     model: str
     region: str
-    gray: int
     mode: str
     guid: str
     components_input: Optional[str] = None
@@ -80,7 +79,6 @@ class QueryConfig:
     pre: str = "0"
     custom_language: Optional[str] = None
     nvid: Optional[str] = None
-    graynew: str = "0"
     recruitID: int = 0
     original_link: int = 0
     pki: int = 0
@@ -175,18 +173,15 @@ def extract_expiration_date(url: str) -> Optional[datetime]:
     return None
 
 
-def get_public_key_for_region(region: str, gray: int) -> Tuple[str, Dict]:
+def get_public_key_for_region(region: str) -> Tuple[str, Dict]:
     key_region = "sg" if region not in ["cn", "eu", "in"] else region
-
-    if gray == 1 and region == "cn":
-        region = "cn_gray"
 
     if region == "cn_cmcc":
         key_region = "cn"
 
     public_key = PUBLIC_KEYS[key_region]
 
-    if region in ["cn", "cn_cmcc", "cn_gray", "eu", "in"]:
+    if region in ["cn", "cn_cmcc", "eu", "in"]:
         config = REGION_CONFIG[region]
     else:
         config = REGION_CONFIG["sg_host"].copy()
@@ -289,7 +284,7 @@ def build_request_headers(
 
 
 def query_update(config: QueryConfig) -> QueryResult:
-    public_key, region_config = get_public_key_for_region(config.region, config.gray)
+    public_key, region_config = get_public_key_for_region(config.region)
     aes_key = generate_random_bytes(32)
     iv = generate_random_bytes(16)
     device_id = generate_random_string(64)
@@ -522,56 +517,6 @@ def auto_complete_query(base_ota_prefix: str, config: QueryConfig) -> bool:
     last_success_fake = None
     has_success = False
 
-    if config.graynew == 1:
-        for suffix in suffixes:
-            candidate = base_ota_prefix + suffix
-            print(f"\nQuerying for {candidate}")
-
-            proc_ota, proc_model = process_ota_version(
-                candidate,
-                config.region,
-                config.genshin,
-                config.pre,
-                config.model if config.has_custom_model else None,
-            )
-
-            taste_cfg = QueryConfig(**config.__dict__)
-            taste_cfg.ota_version = proc_ota
-            taste_cfg.model = proc_model
-            taste_cfg.gray = 0
-            taste_cfg.mode = "taste"
-
-            result_taste = query_update(taste_cfg)
-
-            new_ota_version = (
-                result_taste.data.get("ota_version")
-                if result_taste.success and result_taste.data
-                else None
-            )
-
-            if not new_ota_version or new_ota_version == "N/A":
-                print("\nNo Result")
-                continue
-
-            final_ota, final_model = process_ota_version(
-                new_ota_version,
-                config.region,
-                "0",
-                "0",
-                config.model if config.has_custom_model else None,
-            )
-
-            final_cfg = QueryConfig(**config.__dict__)
-            final_cfg.ota_version = final_ota
-            final_cfg.model = final_model
-            final_cfg.gray = 1
-            final_cfg.genshin = "0"
-            final_cfg.pre = "0"
-
-            result_final = query_update(final_cfg)
-            has_success = display_result(result_final, config.original_link == 1) or has_success
-        return has_success
-
     if config.anti == 1:
         config.mode = "taste"
 
@@ -661,7 +606,7 @@ def parse_args():
         "ota_prefix", nargs="?", help="OTA version prefix or device model"
     )
 
-    valid_regions = [r for r in REGION_CONFIG.keys() if r not in ["sg_host", "cn_gray"]]
+    valid_regions = [r for r in REGION_CONFIG.keys() if r not in ["sg_host"]]
     parser.add_argument(
         "region", nargs="?", type=str.lower, choices=valid_regions, help="Region code"
     )
@@ -671,9 +616,6 @@ def parse_args():
     group_ota.add_argument("--mode", choices=SUPPORTED_MODES, default="manual")
     group_ota.add_argument(
         "--cl", dest="custom_language", help="Custom language (e.g. zh-CN)"
-    )
-    group_ota.add_argument(
-        "--gray", type=int, choices=[0, 1], default=0, help="Gray update"
     )
     group_ota.add_argument(
         "--genshin", choices=["0", "1", "2"], default="0", help="Genshin edition"
@@ -687,13 +629,6 @@ def parse_args():
         "--anti", type=int, choices=[0, 1], default=0, help="Anti mode"
     )
     group_ota.add_argument("--nvid", type=str, help="Custom NV Carrier ID (8 digits)")
-    parser.add_argument(
-        "--graynew",
-        type=int,
-        choices=[0, 1],
-        default=0,
-        help="Query FWs not in taste mode but in gray server",
-    )
     parser.add_argument("--recruit", type=int, choices=[0, 1], default=0,help="recruitID for beta ROM")
     
     parser.add_argument(
@@ -732,7 +667,6 @@ def run_tomboy_query(args) -> bool:
         ota_version=args.ota_prefix,
         model=args.model or "unknown",
         region=args.region,
-        gray=args.gray,
         mode=args.mode,
         guid=args.guid,
         components_input=args.components,
@@ -742,7 +676,6 @@ def run_tomboy_query(args) -> bool:
         pre=args.pre,
         custom_language=args.custom_language,
         nvid=args.nvid,
-        graynew=args.graynew,
         recruitID=args.recruit,
         original_link=args.original_link,
         pki=args.pki,

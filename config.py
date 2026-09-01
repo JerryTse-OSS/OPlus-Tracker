@@ -54,12 +54,6 @@ OTA_REGION_CONFIG = {
         "carrier_id": "10011000",
         "public_key_version": "1615879139745",
     },
-    "cn_gray": {
-        "host": "component-ota-gray.coloros.com",
-        "language": "zh-CN",
-        "carrier_id": "10010111",
-        "public_key_version": "1615879139745",
-    },
     "eu": {
         "host": "component-ota-eu.allawnos.com",
         "language": "en-GB",
