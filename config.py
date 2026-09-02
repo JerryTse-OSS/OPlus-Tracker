@@ -133,6 +133,15 @@ IOT_CONFIG = {
     "gauss_auto_url": "https://gauss-otacostauto-cn.allawnfs.com/",
     "gauss_manual_url": "https://gauss-componentotacostmanual-cn.allawnfs.com/",
 }
+# --- IoT New Configuration ---
+IOT_NEW_CONFIG = {
+    "special_servers": {
+        "cn": "http://i.ota.coloros.com/post/",
+        "foreign": "http://i.ota.foreign.coloros.com/post/"
+    },
+    "gauss_auto_url": "https://gauss-otacostauto-cn.allawnfs.com/",
+    "gauss_manual_url": "https://gauss-componentotacostmanual-cn.allawnfs.com/",
+}
 
 # --- Opex Configuration ---
 OPEX_CONFIG = {
