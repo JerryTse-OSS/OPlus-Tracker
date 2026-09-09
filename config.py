@@ -54,12 +54,6 @@ OTA_REGION_CONFIG = {
         "carrier_id": "10011000",
         "public_key_version": "1615879139745",
     },
-    "cn_gray": {
-        "host": "component-ota-gray.coloros.com",
-        "language": "zh-CN",
-        "carrier_id": "10010111",
-        "public_key_version": "1615879139745",
-    },
     "eu": {
         "host": "component-ota-eu.allawnos.com",
         "language": "en-GB",
@@ -135,6 +129,15 @@ IOT_CONFIG = {
         "gl": "https://ifota.realmemobile.com/post/",
         "in": "https://ifota-in.realmemobile.com/post/",
         "eu": "https://ifota-eu.realmemobile.com/post/"
+    },
+    "gauss_auto_url": "https://gauss-otacostauto-cn.allawnfs.com/",
+    "gauss_manual_url": "https://gauss-componentotacostmanual-cn.allawnfs.com/",
+}
+# --- IoT New Configuration ---
+IOT_NEW_CONFIG = {
+    "special_servers": {
+        "cn": "http://i.ota.coloros.com/post/",
+        "foreign": "http://i.ota.foreign.coloros.com/post/"
     },
     "gauss_auto_url": "https://gauss-otacostauto-cn.allawnfs.com/",
     "gauss_manual_url": "https://gauss-componentotacostmanual-cn.allawnfs.com/",

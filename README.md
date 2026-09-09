@@ -22,6 +22,7 @@ Current scripts:
 - `sota_query.py` → SOTA (Software OTA / modular APK) query
 - `sota_changelog_query.py` → SOTA (Software OTA / modular APK) Changelog query
 - `iot_query.py` → legacy & IoT server query
+- `iot_query_new.py` → legacy & IoT server query (new api)
 - `downgrade_query.py` → query official downgrade packages (CN only)
 - `realme_edl_query.py` → query official EDL packages for Realme
 - `changelog_query.py` → query specific version changelog
@@ -199,6 +200,21 @@ python iot_query.py OWW221_11.A cn --model OWW221
 ```
 
 **Note**: Only supports region `cn`. Results may be outdated.
+
+## `iot_query_new.py`
+
+Query tool for some legacy devices.  
+
+### Usage
+
+```bash
+python iot_query_new.py OTA_PREFIX HARDWARE_VERSION REIGON
+
+# Example
+python iot_query_new.py M6763C A83 cn
+```
+
+**Note**: For devices using this API `hardware_version` is `ro.product.name`.
 
 ## `downgrade_query.py` & `downgrade_query_old.py`
 
