@@ -463,6 +463,7 @@ def display_result(result: QueryResult, show_original_link: bool = False) -> boo
                 if show_original_link and component.original_link != component.link:
                     print(f"• Original Link: {component.original_link}")
                 print(f"• Link: {component.link}")
+                print(f"• MD5: {component.md5}")
             else:
                 for i, component in enumerate(components, 1):
                     print(f"\nComponent {i}: {component.name}")
