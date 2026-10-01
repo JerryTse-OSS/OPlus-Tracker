@@ -83,8 +83,6 @@ def query_downgrade(ota_prefix: str, prj_num: str, cmcc: int = 0):
         carriers = "10011000"
     else:
         carriers = "10010111"
-    # 只使用第一个运营商值
-    current_carrier = carriers[0]
 
     session_key = os.urandom(32)
     iv = os.urandom(12)
@@ -93,7 +91,7 @@ def query_downgrade(ota_prefix: str, prj_num: str, cmcc: int = 0):
         encrypted_device_id_obj = encrypt_aes_gcm(duid, session_key, iv)
         payload = {
             "model": model,
-            "nvCarrier": current_carrier,
+            "nvCarrier": carriers,
             "prjNum": prj_num,
             "otaVersion": ota_version,
             "deviceId": encrypted_device_id_obj,
