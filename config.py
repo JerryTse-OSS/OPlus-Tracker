@@ -230,6 +230,10 @@ EARBUDS_CONFIG = {
             "host": "iot-earbuds-sg.allawnos.com",
             "key": "&*%earphone-OP9U3544**%$"
         },
+        "in": {
+            "host": "iot-earbuds-in.allawnos.com",
+            "key": "&*%earphone-OP9U3544**%$"
+        },
         "us": {
             "host": "iot-earbuds-us.allawnos.com",
             "key": "&*%earbuds-OP6rus-easts*%$"

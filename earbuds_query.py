@@ -136,7 +136,7 @@ def main():
         "region", 
         nargs="?",
         default="cn",
-        choices=["cn", "eu", "gl", "us"], 
+        choices=["cn", "eu", "gl", "us", "in"],
         type=str.lower, 
         help="Region code (default: cn)"
     )
